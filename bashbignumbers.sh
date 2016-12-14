@@ -1,7 +1,7 @@
 #!/bin/sh
 #Before anything else, set the PATH_SCRIPT variable
 	pushd `dirname $0` > /dev/null; PATH_SCRIPT=`pwd -P`; popd > /dev/null
-	PROGNAME=${0##*/}; PROGVERSION=0.1.0 
+	PROGNAME=${0##*/}; 
 
 # WHAT IS THIS?
 # These are bash functions that operate on numbers larger than what bash can usually 
@@ -21,6 +21,14 @@ export GVAR_FLAG_OVERFLOW=0
 export GVAR_FLAG_CARRY=0
 export GVAR_FLAG_NEGATIVE=0
 
+#subshells are SLOW.  I had no idea until I started really pounding this code.
+export GVAR_RESULT  
+# due to speed considerations, GVAR_RESULT can be used if not subshells are called
+# I am gradually changing the code so that printf -v GVAR_RESULT can be used to set 
+# the final return variable
+# Most of the internal utility functions do not need to worry about subshells as they 
+# simply return "1" or "0" and are just inline constructs.
+
 
 ####################################################################################
 #  UTILITY FUNCTIONS
@@ -30,6 +38,12 @@ export GVAR_FLAG_NEGATIVE=0
 #
 #
 echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
+
+programversion()
+{
+  PROGVERSION="0.1.0" 
+  printf '%s\n' "$PROGVERSION" 
+}
 
 bbn_util_printflags()
 {
@@ -47,8 +61,8 @@ bbn_util_flipstring()
   var=$1
   copy=${var}
   len=${#copy}
-  for((i=$len-1;i>=0;i--)); do rev="$rev${copy:$i:1}"; done
-  printf '%s' "$rev"
+  for((i=$len-1;i>=0;i--)); do STRCONSTRUCT="$STRCONSTRUCT${copy:$i:1}"; done
+  printf '%s' "$STRCONSTRUCT"
 }
 
 bbn_util_bin2hex()
@@ -78,7 +92,7 @@ bbn_util_bin2hex()
         done
      fi
   fi
-  echo $STRCONSTRUCT
+  printf '%s' "$STRCONSTRUCT"
 }
 
 ## bbn_util_hex2bin() Hex number to binary string
@@ -87,6 +101,7 @@ bbn_util_hex2bin()
 #  Take a value as a hex number and convert it to a binary string
 #
   HEXVAL=$1
+  STRCONSTRUCT=""  
   #echo "$@"
   #echo "$#"
   if [ "$#" -lt 1 ]; then
@@ -100,11 +115,11 @@ bbn_util_hex2bin()
       #echo "Welcome $COUNTER1 times"
       CHARATINDEX=${HEXVAL:$COUNTER1:1}
       #convert the hex value to binary
-      bbn_util_charhex2bin $CHARATINDEX
+      NIBBLECHAR=$(bbn_util_charhex2bin $CHARATINDEX)
+      STRCONSTRUCT="$STRCONSTRUCT$NIBBLECHAR"
     done 
-  
-  
   fi
+    printf '%s' "$STRCONSTRUCT"
 }
 
 ## bbn_util_charhex2bin() take a hexadecimal nibble and make it a binary sequence
@@ -112,45 +127,44 @@ bbn_util_charhex2bin()
 {
 #  Take a nibble as an argument, and return a binary represntation
 #
-
   NIB=$1  #this should be 0 to F
   NIB=$(bbn_util_lowercase $NIB)
   
   case $NIB in
     "0" )
-        printf "0000" ;;
+        STRCONSTRUCT="0000" ;;
     "1" )
-        printf "0001"  ;;
+        STRCONSTRUCT="0001"  ;;
     "2" )
-        printf "0010"  ;;
+        STRCONSTRUCT="0010"  ;;
     "3" )
-        printf "0011"  ;;         
+        STRCONSTRUCT="0011"  ;;         
     "4" )
-        printf "0100"  ;;
+        STRCONSTRUCT="0100"  ;;
     "5" )
-        printf "0101"  ;;
+        STRCONSTRUCT="0101"  ;;
     "6" )
-        printf "0110"  ;;                               
+        STRCONSTRUCT="0110"  ;;                               
     "7" )
-        printf "0111"  ;; 
+        STRCONSTRUCT="0111"  ;; 
     "8" )
-        printf "1000" ;;
+        STRCONSTRUCT="1000" ;;
     "9" )
-        printf "1001"  ;;
+        STRCONSTRUCT="1001"  ;;
     "a" )
-        printf "1010"  ;;
+        STRCONSTRUCT="1010"  ;;
     "b" )
-        printf "1011"  ;;         
+        STRCONSTRUCT="1011"  ;;         
     "c" )
-        printf "1100"  ;;
+        STRCONSTRUCT="1100"  ;;
     "d" )
-        printf "1101"  ;;
+        STRCONSTRUCT="1101"  ;;
     "e" )
-        printf "1110"  ;;  
+        STRCONSTRUCT="1110"  ;;  
     *) 
-        printf "1111"  ;; 
+        STRCONSTRUCT="1111"  ;; 
   esac
-
+  printf '%s' "$STRCONSTRUCT"
 }
 
 ## bbn_util_binnibble2charhex() take a nibble in binary and turn it into a hexadecimal
@@ -162,41 +176,41 @@ bbn_util_binnibble2charhex()
   
   case $NIB in
     "0000" )
-        printf "0" ;;
+        STRCONSTRUCT="0" ;;
     "0001" )
-        printf "1"  ;;
+        STRCONSTRUCT="1"  ;;
     "0010" )
-        printf "2"  ;;
+        STRCONSTRUCT="2"  ;;
     "0011" )
-        printf "3"  ;;         
+        STRCONSTRUCT="3"  ;;         
     "0100" )
-        printf "4"  ;;
+        STRCONSTRUCT="4"  ;;
     "0101" )
-        printf "5"  ;;
+        STRCONSTRUCT="5"  ;;
     "0110" )
-        printf "6"  ;;                               
+        STRCONSTRUCT="6"  ;;                               
     "0111" )
-        printf "7"  ;; 
+        STRCONSTRUCT="7"  ;; 
     "1000" )
-        printf "8" ;;
+        STRCONSTRUCT="8" ;;
     "1001" )
-        printf "9"  ;;
+        STRCONSTRUCT="9"  ;;
     "1010" )
-        printf "a"  ;;
+        STRCONSTRUCT="a"  ;;
     "1011" )
-        printf "b"  ;;         
+        STRCONSTRUCT="b"  ;;         
     "1100" )
-        printf "c"  ;;
+        STRCONSTRUCT="c"  ;;
     "1101" )
-        printf "d"  ;;
+        STRCONSTRUCT="d"  ;;
     "1110" )
-        printf "e"  ;;  
+        STRCONSTRUCT="e"  ;;  
     "1111" )
-        printf "f"  ;;     
+        STRCONSTRUCT="f"  ;;     
     *) 
-        printf "Z"  ;;   #Z is the error.
+        STRCONSTRUCT="Z"  ;;   #Z is the error.
   esac
-
+  printf '%s' "$STRCONSTRUCT"
 }
 
 ## bbn_util_getbinlength() get the length or greatest length of a binary string 
@@ -214,7 +228,8 @@ bbn_util_getbinlength()
       MAXLEN=$STRLEN  
     fi
   done
-  echo $MAXLEN
+  STRCONSTRUCT=$MAXLEN
+  printf '%s' "$STRCONSTRUCT"
 }
 
 ####################################################################################
@@ -222,37 +237,43 @@ bbn_util_getbinlength()
 #
 bbn_logicXOR() 
 {	if (( $1 ^ $2 )) ;then
-		printf "1"
+		STRCONSTRUCT="1"
 	else
-		printf "0"
+		STRCONSTRUCT="0"
 	fi
+    printf '%s' "$STRCONSTRUCT"
 }
 
 bbn_logicOR() 
 {	if (( $1 | $2 )) ;then
-		printf "1"
+		STRCONSTRUCT="1"
 	else
-		printf "0"
+		STRCONSTRUCT="0"
 	fi
+	printf '%s' "$STRCONSTRUCT"
 }
 
 bbn_logicAND() 
 {	if (( $1 & $2 )) ;then
-		printf "1"
+		STRCONSTRUCT="1"
 	else
-		printf "0"
+		STRCONSTRUCT="0"
 	fi
+	printf '%s' "$STRCONSTRUCT"
 }
 bbn_logicNOT() 
 {	if (( $1 )) ;then
-		printf "0"
+		STRCONSTRUCT="0"
 	else
-		printf "1"
+		STRCONSTRUCT="1"
 	fi
+	printf '%s' "$STRCONSTRUCT"
 }
 
 ####################################################################################
 #  LOGICAL FUNCTIONS
+#  The logical functions operate on boolean logic and DO NOT update the flags currently
+#
 #
 
 bashXORbinstring()
@@ -263,15 +284,22 @@ bashXORbinstring()
 # and return the XOR result
 STRBIN1=$1
 STRBIN2=$2
+#SRESULT=""
+
+printf '0000:' #add false status conditions to keep formatting
 if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
     do
       bbn_logicXOR ${STRBIN1:$COUNTER1:1} ${STRBIN2:$COUNTER1:1}
+      #S=$(bbn_logicXOR ${STRBIN1:$COUNTER1:1} ${STRBIN2:$COUNTER1:1})
+      #SRESULT="$SRESULT$S" 
     done 
 else
   echoerr "ERROR, XOR failed due to different lengths $STRBIN1, $STRBIN2" 
 fi
+   #SRESULT="0000:$SRESULT" #add the status bits as a prefix
+   #printf '%s\n' "$SRESULT" 
 
 }
 
@@ -279,6 +307,7 @@ bashANDbinstring()
 {
 STRBIN1=$1
 STRBIN2=$2
+printf '0000:'
 if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
@@ -295,6 +324,7 @@ bashORbinstring()
 {
 STRBIN1=$1
 STRBIN2=$2
+printf '0000:'
 if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
@@ -309,7 +339,8 @@ fi
 
 bashNOTbinstring()
 {
-  STRBIN1=$1
+printf '0000:'
+STRBIN1=$1
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
     do
@@ -433,15 +464,38 @@ bbn_ALUflag_overflow()
 bbn_ALUflag_zero() 
 { #check if a number is zero
   if [[ $1 =~ ^[0]+$ ]]; then
-    echo "1"
+    STRCONSTRUCT="1"
   else
-    echo "0"
+    STRCONSTRUCT="0"
   fi
+  printf '%s' "$STRCONSTRUCT"
 }
 
 ####################################################################################
 #  ARITHMATIC FUNCTIONS
+#  The math functions return condition codes along with the value by including the 
+#  colon as a delimiter, :.  An example would be the addition:
 #
+#  BINARG0=$(bbn_util_hex2bin "FEDE")  #convert the strings into binary as a string
+#  BINARG1=$(bbn_util_hex2bin "F002")
+#  RESULTFULL=$(bashADDbinstring $BINARG0 $BINARG1) #ADD the ASCII strings
+#  RESULTADD=${RESULTFULL:5}     #get the addition result
+#  GVAR_FLAG_ZERO=${RESULTFULL:0:1} #the zero flag
+#  GVAR_FLAG_CARRY=${RESULTFULL:1:1} # the carry flag
+#  GVAR_FLAG_NEGATIVE=${RESULTFULL:2:1} # the negative flag
+#  GVAR_FLAG_OVERFLOW=${RESULTFULL:3:1} # the overflow
+#
+
+# This function negates a number, ie: 2's compliment
+# You invert the string and add one
+bashNEGbinstring() 
+{
+  SRESULT=$(bashNOTbinstring $1)  #invert the string
+  SRESULT=${SRESULT:5} # remove the status bits
+  STRCONSTRUCT=$(bashINCbinstring $SRESULT)
+  printf '%s' "$STRCONSTRUCT"  
+} 
+
 
 # This function increments a binary string representation of any size.
 # This function is identical to the ADD function but with a fixed value
@@ -482,8 +536,8 @@ SRESULT=""
     #DEBUG--REMOVE LATER
     # printf '\n'
     # printf 'A B S\n%d %d %d\n' "$A" "$B" "$S"
-    SRESULT="$GVAR_FLAG_ZERO$GVAR_FLAG_CARRY$GVAR_FLAG_NEGATIVE$GVAR_FLAG_OVERFLOW:$SRESULT" #add the status bits as a prefix
-    printf '%s\n' "$SRESULT"  
+    STRCONSTRUCT="$GVAR_FLAG_ZERO$GVAR_FLAG_CARRY$GVAR_FLAG_NEGATIVE$GVAR_FLAG_OVERFLOW:$SRESULT" #add the status bits as a prefix
+    printf '%s\n' "$STRCONSTRUCT"  
      
 }
 
@@ -521,8 +575,8 @@ if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     #DEBUG--REMOVE LATER
     # printf '\n'
     # printf 'A B S\n%d %d %d\n' "$A" "$B" "$S"
-    SRESULT="$GVAR_FLAG_ZERO$GVAR_FLAG_CARRY$GVAR_FLAG_NEGATIVE$GVAR_FLAG_OVERFLOW:$SRESULT" #add the status bits as a prefix
-    printf '%s\n' "$SRESULT"  
+    STRCONSTRUCT="$GVAR_FLAG_ZERO$GVAR_FLAG_CARRY$GVAR_FLAG_NEGATIVE$GVAR_FLAG_OVERFLOW:$SRESULT" #add the status bits as a prefix
+    printf '%s\n' "$STRCONSTRUCT"  
      
 else
   echoerr "ERROR, ADD failed due to different lengths $STRBIN1, $STRBIN2" 
@@ -530,116 +584,4 @@ fi
 
 }
 
-####################################################################################
-#  If you run this script as a standalone, it will just verify the behavior of the
-#  functions.
-#
 
-#echo before comment
-: <<'END'
-
-TESTSTR128_0="ca564f9b69a2565f6adee7000d9236ec"
-TESTSTR128_1="ce6a8c03135bf12ca7ca2e748c9c3557"
-
-TESTSTR8_0="70"
-TESTSTR8_1="70"
-
-printf "Testing the bashbignumbers library of name: $PROGNAME\n"
-#get the BASH version
-printf "BASH version: "
-echo ${BASH_VERSION%%[^0-9.]*}
-
-###Tests
-
-#echo before comment
-: <<'END'
-
-echo ""
-echo "TEST: XOR"
-echo "$TESTSTR128_0"
-echo "$TESTSTR128_1"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-BINARG1=$(bbn_util_hex2bin $TESTSTR128_1)
-RESULTXOR=$(bashXORbinstring $BINARG0 $BINARG1) #XOR the ASCII strings
-RESULTXORHEX=$(bbn_util_bin2hex $RESULTXOR)
-#printf '%x : ' "$((2#$RESULTXOR))"  #the BASH method, which fails.
-echo "$RESULTXORHEX"
-echo ""
-
-
-echo "TEST: AND"
-echo "$TESTSTR128_0"
-echo "$TESTSTR128_1"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-BINARG1=$(bbn_util_hex2bin $TESTSTR128_1)
-RESULT=$(bashANDbinstring $BINARG0 $BINARG1) #AND the ASCII strings
-RESULTHEX=$(bbn_util_bin2hex $RESULT)
-echo "$RESULTHEX"
-echo ""
-
-echo "TEST: OR"
-echo "$TESTSTR128_0"
-echo "$TESTSTR128_1"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-BINARG1=$(bbn_util_hex2bin $TESTSTR128_1)
-RESULT=$(bashORbinstring $BINARG0 $BINARG1) #AND the ASCII strings
-RESULTHEX=$(bbn_util_bin2hex $RESULT)
-echo "$RESULTHEX"
-echo ""
-
-echo "TEST: NOT"
-echo "$TESTSTR128_0"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-RESULT=$(bashNOTbinstring $BINARG0) #AND the ASCII strings
-RESULTHEX=$(bbn_util_bin2hex $RESULT)
-echo "$RESULTHEX"
-echo ""
-
-
-
-
-echo ""
-echo "TEST: ADD"
-echo "$TESTSTR128_0"
-echo "$TESTSTR128_1"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-BINARG1=$(bbn_util_hex2bin $TESTSTR128_1)
-#echo $BINARG0
-#echo $BINARG1
-#bashADDbinstring $BINARG0 $BINARG1
-# NOTE ON SUBSHELLS
-# I've included "STATUS BITS" which actually is a hassle because of the scope of
-# BASH and subshells, because the subshells are isolates.
-# In order to that status bits out, they are the first 4 ascii values of the string
-# so we get the format "ZCNV:01010101--bits"
-# Because the $(command) for produces a subshell, it was the best way to get it out.
-RESULTFULL=$(bashADDbinstring $BINARG0 $BINARG1) #ADD the ASCII strings
-RESULTADD=${RESULTFULL:5}
-#echo "$RESULTADD"
-GVAR_FLAG_ZERO=${RESULTFULL:0:1}
-GVAR_FLAG_CARRY=${RESULTFULL:1:1}
-GVAR_FLAG_NEGATIVE=${RESULTFULL:2:1}
-GVAR_FLAG_OVERFLOW=${RESULTFULL:3:1}
-RESULTADDHEX=$(bbn_util_bin2hex $RESULTADD)
-echo "$RESULTADDHEX"
-bbn_util_printflags
-echo ""
-
-echo ""
-echo "TEST: INC"
-echo "$TESTSTR128_0"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-RESULTFULL=$(bashINCbinstring $BINARG0 ) #ADD the ASCII strings
-RESULTINC=${RESULTFULL:5}
-#echo "$RESULTADD"
-GVAR_FLAG_ZERO=${RESULTFULL:0:1}
-GVAR_FLAG_CARRY=${RESULTFULL:1:1}
-GVAR_FLAG_NEGATIVE=${RESULTFULL:2:1}
-GVAR_FLAG_OVERFLOW=${RESULTFULL:3:1}
-RESULTINCHEX=$(bbn_util_bin2hex $RESULTINC)
-echo "$RESULTINCHEX"
-bbn_util_printflags
-echo ""
-
-END
-#echo after comment
