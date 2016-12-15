@@ -25,7 +25,9 @@ export GVAR_FLAG_NEGATIVE=0
 export GVAR_RESULT  
 # due to speed considerations, GVAR_RESULT can be used if not subshells are called
 # I am gradually changing the code so that printf -v GVAR_RESULT can be used to set 
-# the final return variable
+# the final return variable.  I assume that these functions will be called as subshells,
+# but internally, I will not do that.
+#
 # Most of the internal utility functions do not need to worry about subshells as they 
 # simply return "1" or "0" and are just inline constructs.
 
@@ -62,7 +64,7 @@ bbn_util_flipstring()
   copy=${var}
   len=${#copy}
   for((i=$len-1;i>=0;i--)); do STRCONSTRUCT="$STRCONSTRUCT${copy:$i:1}"; done
-  printf '%s' "$STRCONSTRUCT"
+  printf -v GVAR_RESULT '%s' "$STRCONSTRUCT"
 }
 
 bbn_util_bin2hex()
@@ -270,6 +272,149 @@ bbn_logicNOT()
 	printf '%s' "$STRCONSTRUCT"
 }
 
+
+####################################################################################
+#  ARITHMATIC SUPPORT FUNCTIONS
+#
+# This note relates to the bit add, but honestly, it is pertinent to all the functions.
+# I take three inputs, A, B and carry.  I also produce result AND carry
+# The problem is that BASH only allows you to return a single value, and if you need
+# to pass sturctured data, you really shouldn't be using BASH.
+# This is why I have two functions, one for the ADD and one for the carry bit
+
+bbn_ALU_add() 
+{	# I expect inputs of A, B and C, the carry
+    # This function simulates the logic of an addition but the carry logic is a 
+    # separate function
+   SUM=0;
+
+	if [ "$#" -eq 3 ]; then
+	  A=$1;
+	  B=$2;
+	  C=$3;	
+#	  echo "bbn_ALU_add() arguments:"
+#	  echo "A:$A B:$B C:$C"  
+
+	  # the 0,0,0 condition is the default
+	  # the following is the truth table for the ADD without the carry output
+      if   [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 1 ]; then
+        SUM=1
+      elif [ "$A" -eq 0 ] && [ "$B" -eq 1 ] && [ "$C" -eq 0 ]; then
+        SUM=1
+      elif [ "$A" -eq 0 ] && [ "$B" -eq 1 ] && [ "$C" -eq 1 ]; then
+        SUM=0
+      elif [ "$A" -eq 1 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then
+        SUM=1
+      elif [ "$A" -eq 1 ] && [ "$B" -eq 0 ] && [ "$C" -eq 1 ]; then
+        SUM=0
+      elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$C" -eq 0 ]; then
+        SUM=0
+      elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$C" -eq 1 ]; then
+        SUM=1                
+      else
+        SUM=0
+      fi  
+
+	else
+	   echoerr "ERROR, bbn_ALU_add due to argument count.  Wanted 3, got $#. " 
+	   return -1
+	fi
+	printf -v GVAR_RESULT '%x' "$SUM"; 
+}
+
+bbn_ALU_addcarry() 
+{	# I expect inputs of A, B and C, the carry
+    # This function simulates the logic of an addition carry logic but the add logic is a 
+    # separate function
+
+   CARRY=0;
+
+	if [ "$#" -eq 3 ]; then
+	  A=$1;
+	  B=$2;
+	  C=$3;	
+#	  echo "bbn_ALU_addcarry() arguments:"
+#	  echo "A:$A B:$B C:$C"  
+
+	  # the 0,0,0 condition is the default
+	  # the following is the truth table for the CARRY bit of the ADD
+      if   [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 1 ]; then
+        CARRY=0
+      elif [ "$A" -eq 0 ] && [ "$B" -eq 1 ] && [ "$C" -eq 0 ]; then
+        CARRY=0
+      elif [ "$A" -eq 0 ] && [ "$B" -eq 1 ] && [ "$C" -eq 1 ]; then
+        CARRY=1
+      elif [ "$A" -eq 1 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then
+        CARRY=0
+      elif [ "$A" -eq 1 ] && [ "$B" -eq 0 ] && [ "$C" -eq 1 ]; then
+        CARRY=1
+      elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$C" -eq 0 ]; then
+        CARRY=1
+      elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$C" -eq 1 ]; then
+        CARRY=1                
+      else
+        CARRY=0
+      fi  
+	else
+	   echoerr "ERROR, bbn_ALU_addcarry due to argument count.  Wanted 3, got $#. " 
+	   return -1
+	fi
+	printf -v GVAR_RESULT '%x' "$CARRY"; 
+}
+
+bbn_ALUflag_overflow() 
+{ #calculate the overflow logic
+  #if the sum of two positive numbers yields a negative result: overflow
+  #if the sum of two negative numbers yields a positive result: overflow
+
+  # I expect the MSB of each word and the result
+    if [ "$#" -eq 3 ]; then
+	  A=$1;
+	  B=$2;
+	  S=$3;
+	  
+	  if   [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$S" -eq 1 ]; then
+	  	OVERFLOW=1
+	  elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$S" -eq 0 ]; then
+	  	OVERFLOW=1
+	  else
+	    OVERFLOW=0
+	  fi	
+	else
+	   echoerr "ERROR, bbn_ALUflag_overflow due to argument count.  Wanted 3, got $#. " 
+	   return -1
+	fi
+	printf -v GVAR_RESULT '%x' "$OVERFLOW"; 
+}
+
+bbn_ALUflag_zero() 
+{ #check if a number is zero
+  if [[ $1 =~ ^[0]+$ ]]; then
+    STRCONSTRUCT="1"
+  else
+    STRCONSTRUCT="0"
+  fi
+  printf -v GVAR_RESULT '%s' "$STRCONSTRUCT"
+}
+
+
+####################################################################################
+#  UTILITY FUNCTIONS
+#  These functions are for conversions, etc.  They use subshells.
+#
+#
+bashUTILbin2hex()
+{
+   SRESULT=$(bbn_util_bin2hex $1)
+   printf '%s' "$SRESULT"
+}
+
+bashUTILhex2bin()
+{
+   SRESULT=$(bbn_util_hex2bin $1)
+   printf '%s' "$SRESULT"
+}
+
 ####################################################################################
 #  LOGICAL FUNCTIONS
 #  The logical functions operate on boolean logic and DO NOT update the flags currently
@@ -349,129 +494,6 @@ STRBIN1=$1
 }
 
 ####################################################################################
-#  ARITHMATIC SUPPORT FUNCTIONS
-#
-# This note relates to the bit add, but honestly, it is pertinent to all the functions.
-# I take three inputs, A, B and carry.  I also produce result AND carry
-# The problem is that BASH only allows you to return a single value, and if you need
-# to pass sturctured data, you really shouldn't be using BASH.
-# This is why I have two functions, one for the ADD and one for the carry bit
-
-bbn_ALU_add() 
-{	# I expect inputs of A, B and C, the carry
-    # This function simulates the logic of an addition but the carry logic is a 
-    # separate function
-   SUM=0;
-
-	if [ "$#" -eq 3 ]; then
-	  A=$1;
-	  B=$2;
-	  C=$3;	
-#	  echo "bbn_ALU_add() arguments:"
-#	  echo "A:$A B:$B C:$C"  
-
-	  # the 0,0,0 condition is the default
-	  # the following is the truth table for the ADD without the carry output
-      if   [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 1 ]; then
-        SUM=1
-      elif [ "$A" -eq 0 ] && [ "$B" -eq 1 ] && [ "$C" -eq 0 ]; then
-        SUM=1
-      elif [ "$A" -eq 0 ] && [ "$B" -eq 1 ] && [ "$C" -eq 1 ]; then
-        SUM=0
-      elif [ "$A" -eq 1 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then
-        SUM=1
-      elif [ "$A" -eq 1 ] && [ "$B" -eq 0 ] && [ "$C" -eq 1 ]; then
-        SUM=0
-      elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$C" -eq 0 ]; then
-        SUM=0
-      elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$C" -eq 1 ]; then
-        SUM=1                
-      else
-        SUM=0
-      fi  
-
-	else
-	   echoerr "ERROR, bbn_ALU_add due to argument count.  Wanted 3, got $#. " 
-	   return -1
-	fi
-	printf '%x' "$SUM"; 
-}
-
-bbn_ALU_addcarry() 
-{	# I expect inputs of A, B and C, the carry
-    # This function simulates the logic of an addition carry logic but the add logic is a 
-    # separate function
-
-   CARRY=0;
-
-	if [ "$#" -eq 3 ]; then
-	  A=$1;
-	  B=$2;
-	  C=$3;	
-#	  echo "bbn_ALU_addcarry() arguments:"
-#	  echo "A:$A B:$B C:$C"  
-
-	  # the 0,0,0 condition is the default
-	  # the following is the truth table for the CARRY bit of the ADD
-      if   [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 1 ]; then
-        CARRY=0
-      elif [ "$A" -eq 0 ] && [ "$B" -eq 1 ] && [ "$C" -eq 0 ]; then
-        CARRY=0
-      elif [ "$A" -eq 0 ] && [ "$B" -eq 1 ] && [ "$C" -eq 1 ]; then
-        CARRY=1
-      elif [ "$A" -eq 1 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then
-        CARRY=0
-      elif [ "$A" -eq 1 ] && [ "$B" -eq 0 ] && [ "$C" -eq 1 ]; then
-        CARRY=1
-      elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$C" -eq 0 ]; then
-        CARRY=1
-      elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$C" -eq 1 ]; then
-        CARRY=1                
-      else
-        CARRY=0
-      fi  
-	else
-	   echoerr "ERROR, bbn_ALU_addcarry due to argument count.  Wanted 3, got $#. " 
-	   return -1
-	fi
-	printf '%x' "$CARRY"; 
-}
-
-bbn_ALUflag_overflow() 
-{ #calculate the overflow logic
-  #if the sum of two positive numbers yields a negative result: overflow
-  #if the sum of two negative numbers yields a positive result: overflow
-
-  # I expect the MSB of each word and the result
-    if [ "$#" -eq 3 ]; then
-	  A=$1;
-	  B=$2;
-	  S=$3;
-	  
-	  if   [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$S" -eq 1 ]; then
-	  	OVERFLOW=1
-	  elif [ "$A" -eq 1 ] && [ "$B" -eq 1 ] && [ "$S" -eq 0 ]; then
-	  	OVERFLOW=1
-	  else
-	    OVERFLOW=0
-	  fi	
-	else
-	   echoerr "ERROR, bbn_ALUflag_overflow due to argument count.  Wanted 3, got $#. " 
-	   return -1
-	fi
-	printf '%x' "$OVERFLOW"; 
-}
-bbn_ALUflag_zero() 
-{ #check if a number is zero
-  if [[ $1 =~ ^[0]+$ ]]; then
-    STRCONSTRUCT="1"
-  else
-    STRCONSTRUCT="0"
-  fi
-  printf '%s' "$STRCONSTRUCT"
-}
-
-####################################################################################
 #  ARITHMATIC FUNCTIONS
 #  The math functions return condition codes along with the value by including the 
 #  colon as a delimiter, :.  An example would be the addition:
@@ -516,12 +538,15 @@ SRESULT=""
       else
         B="0";
       fi
-      S=$(bbn_ALU_add $A $B $CARRY)  #sum as a bit
-      CARRY=$(bbn_ALU_addcarry $A $B $CARRY) #carry
+      bbn_ALU_add $A $B $CARRY  #sum as a bit
+      S=$GVAR_RESULT
+      bbn_ALU_addcarry $A $B $CARRY #carry
+      CARRY=$GVAR_RESULT
       SRESULT="$SRESULT$S" #build the result bit series
     done
     # flip string
-    SRESULT=$(bbn_util_flipstring $SRESULT)
+    bbn_util_flipstring $SRESULT
+    SRESULT=$GVAR_RESULT
   
     #set the flags
     GVAR_FLAG_CARRY=$CARRY;
@@ -530,9 +555,10 @@ SRESULT=""
     else
       GVAR_FLAG_NEGATIVE=0
     fi
-    GVAR_FLAG_OVERFLOW=$(bbn_ALUflag_overflow $A $B $S)
-    GVAR_FLAG_ZERO=$(bbn_ALUflag_zero $SRESULT)
-    
+    bbn_ALUflag_overflow $A $B $S
+    GVAR_FLAG_OVERFLOW=$GVAR_RESULT
+    bbn_ALUflag_zero $SRESULT
+    GVAR_FLAG_ZERO=$GVAR_RESULT
     #DEBUG--REMOVE LATER
     # printf '\n'
     # printf 'A B S\n%d %d %d\n' "$A" "$B" "$S"
@@ -555,13 +581,15 @@ if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     do
       A=${STRBIN1:$COUNTER1:1}
       B=${STRBIN2:$COUNTER1:1}
-      S=$(bbn_ALU_add $A $B $CARRY)  #sum as a bit
-      CARRY=$(bbn_ALU_addcarry $A $B $CARRY) #carry
+      bbn_ALU_add $A $B $CARRY  #sum as a bit
+      S=$GVAR_RESULT
+      bbn_ALU_addcarry $A $B $CARRY #carry
+      CARRY=$GVAR_RESULT
       SRESULT="$SRESULT$S" #build the result bit series
     done
     # flip string
-    SRESULT=$(bbn_util_flipstring $SRESULT)
-  
+    bbn_util_flipstring $SRESULT
+    SRESULT=$GVAR_RESULT
     #set the flags
     GVAR_FLAG_CARRY=$CARRY;
     if [ $S -eq 1 ]; then
@@ -569,8 +597,10 @@ if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     else
       GVAR_FLAG_NEGATIVE=0
     fi
-    GVAR_FLAG_OVERFLOW=$(bbn_ALUflag_overflow $A $B $S)
-    GVAR_FLAG_ZERO=$(bbn_ALUflag_zero $SRESULT)
+    bbn_ALUflag_overflow $A $B $S
+    GVAR_FLAG_OVERFLOW=$GVAR_RESULT
+    bbn_ALUflag_zero $SRESULT
+    GVAR_FLAG_ZERO=$GVAR_RESULT
     
     #DEBUG--REMOVE LATER
     # printf '\n'

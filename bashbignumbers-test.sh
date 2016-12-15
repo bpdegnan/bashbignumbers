@@ -37,11 +37,11 @@ echo ""
 echo "TEST: XOR"
 echo "$TESTSTR128_0"
 echo "$TESTSTR128_1"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-BINARG1=$(bbn_util_hex2bin $TESTSTR128_1)
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+BINARG1=$(bashUTILhex2bin $TESTSTR128_1)
 RESULTXOR=$(bashXORbinstring $BINARG0 $BINARG1) #XOR the ASCII strings
 RESULTXOR=${RESULTXOR:5}
-RESULTXORHEX=$(bbn_util_bin2hex $RESULTXOR)
+RESULTXORHEX=$(bashUTILbin2hex $RESULTXOR)
 #printf '%x : ' "$((2#$RESULTXOR))"  #the BASH method, which fails.
 echo "$RESULTXORHEX"
 echo ""
@@ -50,31 +50,31 @@ echo ""
 echo "TEST: AND"
 echo "$TESTSTR128_0"
 echo "$TESTSTR128_1"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-BINARG1=$(bbn_util_hex2bin $TESTSTR128_1)
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+BINARG1=$(bashUTILhex2bin $TESTSTR128_1)
 RESULT=$(bashANDbinstring $BINARG0 $BINARG1) #AND the ASCII strings
 RESULT=${RESULT:5}
-RESULTHEX=$(bbn_util_bin2hex $RESULT)
+RESULTHEX=$(bashUTILbin2hex $RESULT)
 echo "$RESULTHEX"
 echo ""
 
 echo "TEST: OR"
 echo "$TESTSTR128_0"
 echo "$TESTSTR128_1"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-BINARG1=$(bbn_util_hex2bin $TESTSTR128_1)
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+BINARG1=$(bashUTILhex2bin $TESTSTR128_1)
 RESULT=$(bashORbinstring $BINARG0 $BINARG1) #OR the ASCII strings
 RESULT=${RESULT:5}
-RESULTHEX=$(bbn_util_bin2hex $RESULT)
+RESULTHEX=$(bashUTILbin2hex $RESULT)
 echo "$RESULTHEX"
 echo ""
 
 echo "TEST: NOT"
 echo "$TESTSTR128_0"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
 RESULT=$(bashNOTbinstring $BINARG0) #NOT the ASCII strings
 RESULT=${RESULT:5}
-RESULTHEX=$(bbn_util_bin2hex $RESULT)
+RESULTHEX=$(bashUTILbin2hex $RESULT)
 echo "$RESULTHEX"
 echo ""
 
@@ -82,8 +82,8 @@ echo ""
 echo "TEST: ADD"
 echo "$TESTSTR128_0"
 echo "$TESTSTR128_1"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
-BINARG1=$(bbn_util_hex2bin $TESTSTR128_1)
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+BINARG1=$(bashUTILhex2bin $TESTSTR128_1)
 #echo $BINARG0
 #echo $BINARG1
 #bashADDbinstring $BINARG0 $BINARG1
@@ -100,14 +100,14 @@ GVAR_FLAG_ZERO=${RESULTFULL:0:1}
 GVAR_FLAG_CARRY=${RESULTFULL:1:1}
 GVAR_FLAG_NEGATIVE=${RESULTFULL:2:1}
 GVAR_FLAG_OVERFLOW=${RESULTFULL:3:1}
-RESULTADDHEX=$(bbn_util_bin2hex $RESULTADD)
+RESULTADDHEX=$(bashUTILbin2hex $RESULTADD)
 echo "$RESULTADDHEX"
 bbn_util_printflags
 echo ""
 
 echo "TEST: INC"
 echo "$TESTSTR128_0"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
 RESULTFULL=$(bashINCbinstring $BINARG0 ) #ADD the ASCII strings
 RESULTINC=${RESULTFULL:5}
 #echo "$RESULTADD"
@@ -115,7 +115,7 @@ GVAR_FLAG_ZERO=${RESULTFULL:0:1}
 GVAR_FLAG_CARRY=${RESULTFULL:1:1}
 GVAR_FLAG_NEGATIVE=${RESULTFULL:2:1}
 GVAR_FLAG_OVERFLOW=${RESULTFULL:3:1}
-RESULTINCHEX=$(bbn_util_bin2hex $RESULTINC)
+RESULTINCHEX=$(bashUTILbin2hex $RESULTINC)
 echo "$RESULTINCHEX"
 bbn_util_printflags
 echo ""
@@ -125,10 +125,10 @@ echo ""
 
 echo "TEST: NEG"
 echo "$TESTSTR128_0"
-BINARG0=$(bbn_util_hex2bin $TESTSTR128_0)
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)
 RESULTFULL=$(bashNEGbinstring $BINARG0 ) #NEG the ASCII strings
 RESULT=${RESULTFULL:5}
-RESULT=$(bbn_util_bin2hex $RESULT)
+RESULT=$(bashUTILbin2hex $RESULT)
 echo "$RESULT"
 echo ""
 
