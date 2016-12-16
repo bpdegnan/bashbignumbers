@@ -132,5 +132,44 @@ RESULT=$(bashUTILbin2hex $RESULT)
 echo "$RESULT"
 echo ""
 
+echo "TEST: ROR"
+echo "$TESTSTR128_0"
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+RESULTFULL=$(bashRORbinstring $BINARG0 ) #ADD the ASCII strings
+#echo $RESULTFULL
+RESULT=${RESULTFULL:5}
+#echo "$RESULT"
+RESULTHEX=$(bashUTILbin2hex $RESULT)
+echo "$RESULTHEX"
+echo ""
 
+echo "TEST: SHR"
+echo "$TESTSTR128_0"
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+RESULTFULL=$(bashSHRbinstring $BINARG0 ) #ADD the ASCII strings
+#echo $RESULTFULL
+RESULT=${RESULTFULL:5}
+RESULTHEX=$(bashUTILbin2hex $RESULT)
+echo "$RESULTHEX"
+echo ""
+
+echo "TEST: ROL"
+echo "$TESTSTR128_0"
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+RESULTFULL=$(bashROLbinstring $BINARG0 ) #ADD the ASCII strings
+#echo $RESULTFULL
+RESULT=${RESULTFULL:5}
+RESULTHEX=$(bashUTILbin2hex $RESULT)
+echo "$RESULTHEX"
+echo ""
+
+echo "TEST: SHL"
+echo "$TESTSTR128_0"
+BINARG0=$(bashUTILhex2bin $TESTSTR128_0)  #convert the strings into binary as a string
+RESULTFULL=$(bashSHLbinstring $BINARG0 ) #ADD the ASCII strings
+#echo $RESULTFULL
+RESULT=${RESULTFULL:5}
+RESULTHEX=$(bashUTILbin2hex $RESULT)
+echo "$RESULTHEX"
+echo ""
 

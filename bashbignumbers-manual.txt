@@ -1,0 +1,39 @@
+bashbignumbers.sh, version 0.1.0
+
+This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  
+
+The basic functions in version 0.1.0 are the following:
+Arithmetic:
+bashNEGbinstring()  2' compliment of number
+bashINCbinstring()  Increment a number by 1
+bashADDbinstring()  The addition of two bin strings
+
+Logical:
+bashXORbinstring()  Logical XOR
+bashANDbinstring()  Logical AND
+bashORbinstring()   Logical OR
+bashNOTbinstring()  Logical compliment
+bashRORbinstring()  Roll Right that wraps around
+bashSHRbinstring()  Shift right, sign extend off MSB
+bashROLbinstring()  Roll Left, that wraps around
+bashSHLbinstring()  Shift left, sign extend off LSB
+
+Utility:
+bashUTILbin2hex()   Convert a binary string to a hex string
+bashUTILhex2bin()   Convert a hex string to a binary string
+bashUTILzerowidth() Create a "zero" word of a width.
+
+
+As the names suggest, the arithmetic and logical functions operation on binary strings.  These binary strings should be considered to be as registers.  Furthermore, these binary strings had a prefix of 4-bits separated by a ":" because conditions codes are included.  The condition codes bits are ZCNV.  An example of an addition follows:
+
+#Convert two numbers from hex into binary strings
+BINARG0=$(bashUTILhex2bin "92345")  
+BINARG1=$(bashUTILhex2bin "A789a")
+RESULTFULL=$(bashADDbinstring $BINARG0 $BINARG1) #ADD the ASCII binary representations
+
+The result of will be "0101:00111001101111011111" in the RESULTFULL variable.  The condition codes can be either removed or the words can be passed as-is to the next function.  The functions all look for the ":" in the word and convert the binary string appropriately.
+
+  
+
+
+

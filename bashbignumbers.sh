@@ -73,8 +73,6 @@ bbn_util_bin2hex()
    # and I have values that are up to 256-bits
   HEXVAL=$1
   STRCONSTRUCT=""
-  #echo "$@"
-  #echo "$#"
   if [ "$#" -lt 1 ]; then
     # this means that the function was run without any arguments
    :  #null command to make BASH happy
@@ -104,8 +102,6 @@ bbn_util_hex2bin()
 #
   HEXVAL=$1
   STRCONSTRUCT=""  
-  #echo "$@"
-  #echo "$#"
   if [ "$#" -lt 1 ]; then
     # this means that the function was run without any arguments
    :  #null command to make BASH happy
@@ -405,7 +401,12 @@ bbn_ALUflag_zero()
 #
 bashUTILbin2hex()
 {
-   SRESULT=$(bbn_util_bin2hex $1)
+  STRBIN1=$1
+  SEMI=${STRBIN1:4:1}
+  if [[ "$SEMI" == ':' ]]; then 
+    STRBIN1=${STRBIN1:5}
+  fi
+   SRESULT=$(bbn_util_bin2hex $STRBIN1)
    printf '%s' "$SRESULT"
 }
 
@@ -413,6 +414,24 @@ bashUTILhex2bin()
 {
    SRESULT=$(bbn_util_hex2bin $1)
    printf '%s' "$SRESULT"
+}
+
+#this creates a 
+bashUTILzerowidth()
+{
+	STRNUM=$1 #this number is a bit width, but I only support nibble width
+	STRMOD=$(( STRNUM % 4 )) # find if the modulus
+	if [ $STRMOD -ne 0 ] ; then
+	  let STRNUM=STRNUM-STRMOD
+	  let STRNUM=STRNUM+4
+	fi
+	#at this point, we have a nibble aligned word.
+	for ((COUNTER1=0; COUNTER1 < STRNUM ; COUNTER1++))
+    do
+      S="0"
+      STRCONSTRUCT="$STRCONSTRUCT$S"
+    done 
+    printf '%s' "$STRCONSTRUCT"  
 }
 
 ####################################################################################
@@ -432,6 +451,14 @@ STRBIN2=$2
 #SRESULT=""
 
 printf '0000:' #add false status conditions to keep formatting
+SEMI=${STRBIN1:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN1=${STRBIN1:5}
+fi
+SEMI=${STRBIN2:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN2=${STRBIN2:5}
+fi
 if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
@@ -453,6 +480,15 @@ bashANDbinstring()
 STRBIN1=$1
 STRBIN2=$2
 printf '0000:'
+SEMI=${STRBIN1:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN1=${STRBIN1:5}
+fi
+SEMI=${STRBIN2:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN2=${STRBIN2:5}
+fi
+
 if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
@@ -470,6 +506,16 @@ bashORbinstring()
 STRBIN1=$1
 STRBIN2=$2
 printf '0000:'
+
+SEMI=${STRBIN1:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN1=${STRBIN1:5}
+fi
+SEMI=${STRBIN2:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN2=${STRBIN2:5}
+fi
+
 if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
@@ -484,14 +530,89 @@ fi
 
 bashNOTbinstring()
 {
-printf '0000:'
-STRBIN1=$1
+   printf '0000:'
+  STRBIN1=$1
+  SEMI=${STRBIN1:4:1}
+  if [[ "$SEMI" == ':' ]]; then 
+    STRBIN1=${STRBIN1:5}
+  fi 
+ 
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
     do
       bbn_logicNOT ${STRBIN1:$COUNTER1:1}
     done 
 }
+
+##
+#  bashRORbinstring rolls to the right by 1.  Because we have no idea of the length
+#  of the words, we just assume that the roll right is a single bit.
+bashRORbinstring()
+{
+  printf '0000:'
+  STRBIN1=$1
+  SEMI=${STRBIN1:4:1}
+  if [[ "$SEMI" == ':' ]]; then 
+    STRBIN1=${STRBIN1:5}
+  fi
+  STRSIZE=${#STRBIN1}
+  let STRLSB=STRSIZE-1
+  RIGHTBIT=${STRBIN1:$STRLSB:1}
+  REMAIN=${STRBIN1:0:$STRLSB}
+  STRCONSTRUCT="$RIGHTBIT$REMAIN"
+  printf '%s' "$STRCONSTRUCT"  
+}
+
+##
+#  bashSHRbinstring shifts to the right by 1 and sign extend based off the MSB.
+bashSHRbinstring()
+{
+  printf '0000:'
+  STRBIN1=$1
+  SEMI=${STRBIN1:4:1}
+  if [[ "$SEMI" == ':' ]]; then 
+    STRBIN1=${STRBIN1:5}
+  fi 
+  STRSIZE=${#STRBIN1}
+  let STRLSB=STRSIZE-1
+  LEFTBIT=${STRBIN1:0:1}
+  REMAIN=${STRBIN1:0:$STRLSB}
+  STRCONSTRUCT="$LEFTBIT$REMAIN"
+  printf '%s' "$STRCONSTRUCT"  
+}
+
+bashROLbinstring()
+{
+  printf '0000:'
+  STRBIN1=$1
+  SEMI=${STRBIN1:4:1}
+  if [[ "$SEMI" == ':' ]]; then 
+    STRBIN1=${STRBIN1:5}
+  fi  
+  STRSIZE=${#STRBIN1}
+  let STRLSB=STRSIZE-1
+  LEFTBIT=${STRBIN1:0:1}
+  REMAIN=${STRBIN1:1:$STRLSB}
+  STRCONSTRUCT="$REMAIN$LEFTBIT"
+  printf '%s' "$STRCONSTRUCT"  
+}
+
+bashSHLbinstring()
+{
+  printf '0000:'
+  SEMI=${STRBIN1:4:1}
+  if [[ "$SEMI" == ':' ]]; then 
+    STRBIN1=${STRBIN1:5}
+  fi
+  STRBIN1=$1
+  STRSIZE=${#STRBIN1}
+  let STRLSB=STRSIZE-1
+  RIGHTBIT=${STRBIN1:$STRLSB:1}
+  REMAIN=${STRBIN1:1:$STRLSB}
+  STRCONSTRUCT="$REMAIN$RIGHTBIT"
+  printf '%s' "$STRCONSTRUCT"  
+}
+
 
 ####################################################################################
 #  ARITHMATIC FUNCTIONS
@@ -512,7 +633,12 @@ STRBIN1=$1
 # You invert the string and add one
 bashNEGbinstring() 
 {
-  SRESULT=$(bashNOTbinstring $1)  #invert the string
+STRBIN1=$1
+SEMI=${STRBIN1:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN1=${STRBIN1:5}
+fi
+  SRESULT=$(bashNOTbinstring $STRBIN1)  #invert the string
   SRESULT=${SRESULT:5} # remove the status bits
   STRCONSTRUCT=$(bashINCbinstring $SRESULT)
   printf '%s' "$STRCONSTRUCT"  
@@ -527,6 +653,10 @@ bashINCbinstring()
 STRBIN1=$1
 CARRY=0 #default carry value
 SRESULT=""
+SEMI=${STRBIN1:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN1=${STRBIN1:5}
+fi
 
     STRSIZE=${#STRBIN1}  #the string length of the argument
     let STRSIZE=STRSIZE-1 #this is start the string at the correct location
@@ -574,6 +704,18 @@ STRBIN1=$1
 STRBIN2=$2
 CARRY=0 #default carry value
 SRESULT=""
+#The first order to business is to cut off the condition codes if they were passed.
+SEMI=${STRBIN1:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN1=${STRBIN1:5}
+fi
+
+SEMI=${STRBIN2:4:1}
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN2=${STRBIN2:5}
+fi
+
+#now on to the ADD calculation
 if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     STRSIZE=${#STRBIN1}  #the string length of the argument
     let STRSIZE=STRSIZE-1 #this is start the string at the correct location
@@ -610,6 +752,8 @@ if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
      
 else
   echoerr "ERROR, ADD failed due to different lengths $STRBIN1, $STRBIN2" 
+  echoerr "STRBIN1: ${#STRBIN1}"
+  echoerr "STRBIN2: ${#STRBIN2}"
 fi
 
 }
