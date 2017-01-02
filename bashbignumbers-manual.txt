@@ -17,6 +17,7 @@ bashRORbinstring()  Roll Right that wraps around
 bashSHRbinstring()  Shift right, sign extend off MSB
 bashROLbinstring()  Roll Left, that wraps around
 bashSHLbinstring()  Shift left, sign extend off LSB
+bashEXTbinstring()  extend the length of the binary word
 
 Utility:
 bashUTILbin2hex()   Convert a binary string to a hex string

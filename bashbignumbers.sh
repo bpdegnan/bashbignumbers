@@ -57,6 +57,18 @@ bbn_util_lowercase(){
     echo "$1" | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/"
 }
 
+bbn_util_removeflags()
+{
+  #remove the prefix flags
+  STRBIN1=$1
+  #cut off the condition codes if they were passed.
+  SEMI=${STRBIN1:4:1}
+  if [[ "$SEMI" == ':' ]]; then 
+    STRBIN1=${STRBIN1:5}
+  fi
+  printf '%s' "$STRBIN1"  
+}
+
 bbn_util_flipstring()
 {
 #reorder string.  This is needed because the math functions work LSB to MSB
@@ -77,6 +89,11 @@ bbn_util_bin2hex()
     # this means that the function was run without any arguments
    :  #null command to make BASH happy
   else
+     
+     SEMI=${HEXVAL:4:1}
+     if [[ "$SEMI" == ':' ]]; then 
+        HEXVAL=${HEXVAL:5}
+     fi
      
      STRSIZE=${#HEXVAL}  #the string length of the argument
      STRVALID=$(($STRSIZE%4))
@@ -126,7 +143,7 @@ bbn_util_charhex2bin()
 #  Take a nibble as an argument, and return a binary represntation
 #
   NIB=$1  #this should be 0 to F
-  NIB=$(bbn_util_lowercase $NIB)
+  #NIB=$(bbn_util_lowercase $NIB)
   
   case $NIB in
     "0" )
@@ -158,7 +175,17 @@ bbn_util_charhex2bin()
     "d" )
         STRCONSTRUCT="1101"  ;;
     "e" )
-        STRCONSTRUCT="1110"  ;;  
+        STRCONSTRUCT="1110"  ;;
+    "A" )
+        STRCONSTRUCT="1010"  ;;
+    "B" )
+        STRCONSTRUCT="1011"  ;;         
+    "C" )
+        STRCONSTRUCT="1100"  ;;
+    "D" )
+        STRCONSTRUCT="1101"  ;;
+    "E" )
+        STRCONSTRUCT="1110"  ;;           
     *) 
         STRCONSTRUCT="1111"  ;; 
   esac
@@ -170,7 +197,7 @@ bbn_util_binnibble2charhex()
 {
 
   NIB=$1  #this should be as string of 4 from 0 to 1
-  NIB=$(bbn_util_lowercase $NIB)
+  #NIB=$(bbn_util_lowercase $NIB)
   
   case $NIB in
     "0000" )
@@ -440,6 +467,36 @@ bashUTILzerowidth()
 #
 #
 
+
+bashEXTbinstring()
+{
+#this is a sign extension.
+# the first argument is the binary representation, and second is the length
+STRBIN1=$1
+STRBIN2=$2
+#printf '0000:' #add false status conditions to keep formatting
+printf -v STRCONSTRUCT '0000:' 
+SEMI=${STRBIN1:4:1}  #remove the status 
+if [[ "$SEMI" == ':' ]]; then 
+  STRBIN1=${STRBIN1:5}
+fi
+
+STRSIZE=${#STRBIN1} #the length of the string
+#if STRSIZE is less than the argument of STRBIN, then you make the string longer
+if [ $STRSIZE -lt $STRBIN2 ]; then
+  DIFSIZE=$(($STRBIN2-$STRSIZE)) #due to the conditional, this will NEVER be negative
+  SEMI=${STRBIN1:0:1} #get the first character.
+  for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
+  do
+    STRCONSTRUCT="$STRCONSTRUCT$SEMI"
+  done   
+#  STRCONSTRUCT
+  STRCONSTRUCT="$STRCONSTRUCT$STRBIN1"
+  printf '%s\n' "$STRCONSTRUCT" 
+fi
+
+}
+
 bashXORbinstring()
 {
 # Take a string, such as arguments 1, 2:
@@ -464,14 +521,10 @@ if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
     do
       bbn_logicXOR ${STRBIN1:$COUNTER1:1} ${STRBIN2:$COUNTER1:1}
-      #S=$(bbn_logicXOR ${STRBIN1:$COUNTER1:1} ${STRBIN2:$COUNTER1:1})
-      #SRESULT="$SRESULT$S" 
     done 
 else
   echoerr "ERROR, XOR failed due to different lengths $STRBIN1, $STRBIN2" 
 fi
-   #SRESULT="0000:$SRESULT" #add the status bits as a prefix
-   #printf '%s\n' "$SRESULT" 
 
 }
 
@@ -536,7 +589,6 @@ bashNOTbinstring()
   if [[ "$SEMI" == ':' ]]; then 
     STRBIN1=${STRBIN1:5}
   fi 
- 
     STRSIZE=${#STRBIN1}  #the string length of the argument
     for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
     do
