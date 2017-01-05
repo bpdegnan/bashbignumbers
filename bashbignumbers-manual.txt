@@ -1,4 +1,4 @@
-bashbignumbers.sh, version 0.1.0
+bashbignumbers.sh, version 0.2.0
 
 This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  
 
@@ -7,6 +7,7 @@ Arithmetic:
 bashNEGbinstring()  2' compliment of number
 bashINCbinstring()  Increment a number by 1
 bashADDbinstring()  The addition of two bin strings
+bashMULbinstring()  The multiplication of two bin strings
 
 Logical:
 bashXORbinstring()  Logical XOR
@@ -16,8 +17,9 @@ bashNOTbinstring()  Logical compliment
 bashRORbinstring()  Roll Right that wraps around
 bashSHRbinstring()  Shift right, sign extend off MSB
 bashROLbinstring()  Roll Left, that wraps around
-bashSHLbinstring()  Shift left, sign extend off LSB
-bashEXTbinstring()  extend the length of the binary word
+bashSHLbinstring()  Shift left
+bashEXTbinstring()  extend the length of the binary word through sign extension
+bashPADbinstring()  extend the length of the binary word through 0 padding
 
 Utility:
 bashUTILbin2hex()   Convert a binary string to a hex string
@@ -35,6 +37,8 @@ RESULTFULL=$(bashADDbinstring $BINARG0 $BINARG1) #ADD the ASCII binary represent
 The result of will be "0101:00111001101111011111" in the RESULTFULL variable.  The condition codes can be either removed or the words can be passed as-is to the next function.  The functions all look for the ":" in the word and convert the binary string appropriately.
 
   
-
-
+Revision History:
+  
+version 0.2.0:  Removed internal subshells, added the MUL instruction.
+version 0.1.0:  Initial version
 
