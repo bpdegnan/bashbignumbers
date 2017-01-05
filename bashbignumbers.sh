@@ -878,7 +878,6 @@ if [ ${#STRBIN1_MUL} -eq ${#STRBIN2_MUL} ]; then
     SRESULT_MUL=$(bashUTILzerowidth $RESULTSIZE_MUL) #create the result
 #    echo "result size: $RESULTSIZE"
     STRBIN2_MUL=$(bashPADbinstring $STRBIN2_MUL $RESULTSIZE_MUL)
-    STRBIN2_MUL
     #strip the codes
     SEMI_MUL=${STRBIN2_MUL:4:1}
     if [[ "$SEMI_MUL" == ':' ]]; then 
@@ -891,21 +890,21 @@ if [ ${#STRBIN1_MUL} -eq ${#STRBIN2_MUL} ]; then
     for ((COUNTER1_MUL=STRSIZE_MUL; COUNTER1_MUL >= 0 ; COUNTER1_MUL--))
     do
        A_MUL=${STRBIN1_MUL:$COUNTER1_MUL:1}
-       echo "[$COUNTER1_MUL] loop STRBIN1_MUL: $STRBIN1_MUL"
-       echo "[$COUNTER1_MUL] loop STRBIN2_MUL: $STRBIN2_MUL"
-       echo "[$COUNTER1_MUL] loop SRESULT_MUL: $SRESULT_MUL"       
-       echo "[$COUNTER1_MUL] $STRBIN1_MUL is $A_MUL "
+    #   echo "[$COUNTER1_MUL] loop STRBIN1_MUL: $STRBIN1_MUL"
+    #   echo "[$COUNTER1_MUL] loop STRBIN2_MUL: $STRBIN2_MUL"
+    #   echo "[$COUNTER1_MUL] loop SRESULT_MUL: $SRESULT_MUL"       
+    #   echo "[$COUNTER1_MUL] $STRBIN1_MUL is $A_MUL "
        if [ $A_MUL -eq 1 ]; then  #if we have a 1, we add 
         # SRESULT=$(bashADDbinstring $SRESULT $STRBIN2) #subshell
          gbashADDbinstring $SRESULT_MUL $STRBIN2_MUL
          SRESULT_MUL=$GVAR_RESULT
          
-         echo "[$COUNTER1_MUL] ADD RAW: $SRESULT_MUL"
+    #     echo "[$COUNTER1_MUL] ADD RAW: $SRESULT_MUL"
          SEMI_MUL=${SRESULT_MUL:4:1}
          if [[ "$SEMI_MUL" == ':' ]]; then 
            SRESULT_MUL=${SRESULT_MUL:5}
          fi         
-         echo "[$COUNTER1_MUL] ADD result: $SRESULT_MUL"
+      #   echo "[$COUNTER1_MUL] ADD result: $SRESULT_MUL"
        fi
        #the high bits of STRBIN2 should be 
        STRBIN2_MUL=$(bashSHLbinstring $STRBIN2_MUL)
