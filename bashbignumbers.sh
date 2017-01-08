@@ -448,7 +448,7 @@ bashUTILhex2bin()
   if [[ "$SEMI" == 'x' ]]; then 
     STRBIN1=${STRBIN1:2}
   fi
-   SRESULT=$(bbn_util_hex2bin $1)
+   SRESULT=$(bbn_util_hex2bin $STRBIN1)
    printf '%s' "$SRESULT"
 }
 
