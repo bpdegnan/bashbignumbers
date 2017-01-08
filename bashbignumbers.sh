@@ -43,7 +43,7 @@ echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
 programversion()
 {
-  PROGVERSION="0.2.0" 
+  PROGVERSION="0.2.1" 
   printf '%s\n' "$PROGVERSION" 
 }
 
@@ -438,7 +438,16 @@ bashUTILbin2hex()
 }
 
 bashUTILhex2bin()
-{
+{  #remove the 0x or 0X if it exists on the hex value.
+  STRBIN1=$1
+  SEMI=${STRBIN1:1:1}
+  if [[ "$SEMI" == 'x' ]]; then 
+    STRBIN1=${STRBIN1:2}
+  fi
+  SEMI=${STRBIN1:1:1}
+  if [[ "$SEMI" == 'x' ]]; then 
+    STRBIN1=${STRBIN1:2}
+  fi
    SRESULT=$(bbn_util_hex2bin $1)
    printf '%s' "$SRESULT"
 }

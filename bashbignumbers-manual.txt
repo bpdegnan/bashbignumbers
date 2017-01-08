@@ -1,4 +1,4 @@
-bashbignumbers.sh, version 0.2.0
+bashbignumbers.sh, version 0.2.1
 
 This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  
 
@@ -38,7 +38,8 @@ The result of will be "0101:00111001101111011111" in the RESULTFULL variable.  T
 
   
 Revision History:
-  
+
+version 0.2.1:  Updated hex2bin function  
 version 0.2.0:  Removed internal subshells, added the MUL instruction.
 version 0.1.0:  Initial version
 
