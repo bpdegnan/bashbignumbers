@@ -43,7 +43,7 @@ echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
 programversion()
 {
-  PROGVERSION="0.2.1" 
+  PROGVERSION="0.2.2" 
   printf '%s\n' "$PROGVERSION" 
 }
 
@@ -72,11 +72,17 @@ bbn_util_removeflags()
 bbn_util_flipstring()
 {
 #reorder string.  This is needed because the math functions work LSB to MSB
-  var=$1
-  copy=${var}
-  len=${#copy}
-  for((i=$len-1;i>=0;i--)); do STRCONSTRUCT="$STRCONSTRUCT${copy:$i:1}"; done
-  printf -v GVAR_RESULT '%s' "$STRCONSTRUCT"
+  flipvar=$1
+  flipcopy=${flipvar}
+  fliplen=${#flipcopy}
+  FLIPSTRCONSTRUCT=""
+  for((flipcounteri=$fliplen-1;flipcounteri>=0;flipcounteri--)); 
+    do 
+      FLIPSTRCONSTRUCT="$FLIPSTRCONSTRUCT${flipcopy:$flipcounteri:1}"; 
+    done
+    
+ # echo "flip length"  
+  printf -v GVAR_RESULT '%s' "$FLIPSTRCONSTRUCT"
 }
 
 bbn_util_bin2hex()
@@ -832,6 +838,7 @@ fi
 if [ ${#STRBIN1_ADD} -eq ${#STRBIN2_ADD} ]; then
     STRSIZE_ADD=${#STRBIN1_ADD}  #the string length of the argument
     let STRSIZE_ADD=STRSIZE_ADD-1 #this is start the string at the correct location
+    #the strings are left to right, but the math is right to left
     for ((COUNTER1_ADD=STRSIZE_ADD; COUNTER1_ADD >= 0 ; COUNTER1_ADD--))
     do
       A_ADD=${STRBIN1_ADD:$COUNTER1_ADD:1}
@@ -842,9 +849,11 @@ if [ ${#STRBIN1_ADD} -eq ${#STRBIN2_ADD} ]; then
       CARRY_ADD=$GVAR_RESULT
       SRESULT_ADD="$SRESULT_ADD$S_ADD" #build the result bit series
     done
+#    echo "no flip $SRESULT_ADD, len: ${#SRESULT_ADD}"
     # flip string
     bbn_util_flipstring $SRESULT_ADD
     SRESULT_ADD=$GVAR_RESULT
+#    echo "SRESULT_ADD $SRESULT_ADD, len: ${#SRESULT_ADD}"
     #set the flags
     GVAR_FLAG_CARRY=$CARRY_ADD;
     if [ $S_ADD -eq 1 ]; then
@@ -887,33 +896,34 @@ if [ ${#STRBIN1_MUL} -eq ${#STRBIN2_MUL} ]; then
     SRESULT_MUL=$(bashUTILzerowidth $RESULTSIZE_MUL) #create the result
 #    echo "result size: $RESULTSIZE"
     STRBIN2_MUL=$(bashPADbinstring $STRBIN2_MUL $RESULTSIZE_MUL)
-    #strip the codes
+    #strip the codes that comes from the PAD instruction
     SEMI_MUL=${STRBIN2_MUL:4:1}
     if [[ "$SEMI_MUL" == ':' ]]; then 
       STRBIN2_MUL=${STRBIN2_MUL:5}
     fi
-#    echo "STRBIN1: $STRBIN1"
-#    echo "STRBIN2: $STRBIN2"
-#    echo "SRESULT: $SRESULT"
+#    
+#    echo "SRESULT_MUL: $SRESULT_MUL"
+#    echo "STRBIN1_MUL: $STRBIN1_MUL"
+#    echo "STRBIN2_MUL: $STRBIN2_MUL"
+    
     let STRSIZE_MUL=STRSIZE_MUL-1 #this is start the string at the correct location
     for ((COUNTER1_MUL=STRSIZE_MUL; COUNTER1_MUL >= 0 ; COUNTER1_MUL--))
     do
        A_MUL=${STRBIN1_MUL:$COUNTER1_MUL:1}
-    #   echo "[$COUNTER1_MUL] loop STRBIN1_MUL: $STRBIN1_MUL"
-    #   echo "[$COUNTER1_MUL] loop STRBIN2_MUL: $STRBIN2_MUL"
-    #   echo "[$COUNTER1_MUL] loop SRESULT_MUL: $SRESULT_MUL"       
-    #   echo "[$COUNTER1_MUL] $STRBIN1_MUL is $A_MUL "
+#       echo "[$COUNTER1_MUL] loop STRBIN1_MUL: $STRBIN1_MUL"
+#       echo "[$COUNTER1_MUL] loop STRBIN2_MUL: $STRBIN2_MUL"
+#       echo "[$COUNTER1_MUL] loop SRESULT_MUL: $SRESULT_MUL"       
+#       echo "[$COUNTER1_MUL] $STRBIN1_MUL is $A_MUL "
        if [ $A_MUL -eq 1 ]; then  #if we have a 1, we add 
         # SRESULT=$(bashADDbinstring $SRESULT $STRBIN2) #subshell
          gbashADDbinstring $SRESULT_MUL $STRBIN2_MUL
          SRESULT_MUL=$GVAR_RESULT
-         
-    #     echo "[$COUNTER1_MUL] ADD RAW: $SRESULT_MUL"
+#         echo "[$COUNTER1_MUL] init SRESULT_MUL: $SRESULT_MUL"
          SEMI_MUL=${SRESULT_MUL:4:1}
          if [[ "$SEMI_MUL" == ':' ]]; then 
            SRESULT_MUL=${SRESULT_MUL:5}
          fi         
-      #   echo "[$COUNTER1_MUL] ADD result: $SRESULT_MUL"
+#         echo "[$COUNTER1_MUL] final SRESULT_MUL: $SRESULT_MUL"
        fi
        #the high bits of STRBIN2 should be 
        STRBIN2_MUL=$(bashSHLbinstring $STRBIN2_MUL)
@@ -925,6 +935,8 @@ if [ ${#STRBIN1_MUL} -eq ${#STRBIN2_MUL} ]; then
        #echo "[$COUNTER1_MUL] loop STRBIN2_MUL: $STRBIN2_MUL"
        #echo "[$COUNTER1_MUL] loop SRESULT_MUL: $SRESULT_MUL"
     done
+    #we need to condition codes for consistency
+    SRESULT_MUL="0000:$SRESULT_MUL"
 fi
   #printf -v GVAR_RESULT '%s' "$SRESULT"
   printf '%s' "$SRESULT_MUL"
