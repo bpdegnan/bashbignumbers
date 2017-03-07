@@ -43,7 +43,7 @@ echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
 programversion()
 {
-  PROGVERSION="0.2.2" 
+  PROGVERSION="0.2.3" 
   printf '%s\n' "$PROGVERSION" 
 }
 
@@ -266,6 +266,9 @@ bbn_util_getbinlength()
 ####################################################################################
 #  BITWISE LOGICAL FUNCTIONS
 #
+
+
+
 bbn_logicXOR() 
 {	if (( $1 ^ $2 )) ;then
 		STRCONSTRUCT="1"
@@ -488,8 +491,30 @@ bashPADbinstring()
 # the first argument is the binary representation, and second is the length
 STRBIN1=$1
 STRBIN2=$2
+
+STRSIZE=${#STRBIN1} #the length of the string
+#if STRSIZE is less than the argument of STRBIN, then you make the string longer
+if [ $STRSIZE -lt $STRBIN2 ]; then
+  DIFSIZE=$(($STRBIN2-$STRSIZE)) #due to the conditional, this will NEVER be negative
+  SEMI="0"
+  for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
+  do
+    STRCONSTRUCT="$STRCONSTRUCT$SEMI"
+  done   
+#  STRCONSTRUCT
+  STRCONSTRUCT="$STRCONSTRUCT$STRBIN1"
+  printf '%s\n' "$STRCONSTRUCT" 
+fi
+}
+
+bashPADbinstring_contitions()
+{
+#this is a padding function that puts a 0 prefix
+# the first argument is the binary representation, and second is the length
+STRBIN1=$1
+STRBIN2=$2
 #printf '0000:' #add false status conditions to keep formatting
-printf -v STRCONSTRUCT '0000:' 
+#printf -v STRCONSTRUCT '0000:' 
 SEMI=${STRBIN1:4:1}  #remove the status 
 if [[ "$SEMI" == ':' ]]; then 
   STRBIN1=${STRBIN1:5}
@@ -518,7 +543,7 @@ bashEXTbinstring()
 STRBIN1=$1
 STRBIN2=$2
 #printf '0000:' #add false status conditions to keep formatting
-printf -v STRCONSTRUCT '0000:' 
+#printf -v STRCONSTRUCT '0000:' 
 SEMI=${STRBIN1:4:1}  #remove the status 
 if [[ "$SEMI" == ':' ]]; then 
   STRBIN1=${STRBIN1:5}
@@ -550,7 +575,7 @@ STRBIN1=$1
 STRBIN2=$2
 #SRESULT=""
 
-printf '0000:' #add false status conditions to keep formatting
+#printf '0000:' #add false status conditions to keep formatting
 SEMI=${STRBIN1:4:1}
 if [[ "$SEMI" == ':' ]]; then 
   STRBIN1=${STRBIN1:5}
@@ -571,11 +596,54 @@ fi
 
 }
 
+## bashXORbinstringseries takes a series of bits and computs the logical XOR
+# This is primarily used for the AES bitmask verification
+# bashXORbinstringseries "1" "1" "1"  will return a 1
+# bashXORbinstringseries "11" "11" "00" will return a "00"
+bashXORbinstringseries()
+{
+  xorargs=$#                          # number of command line args
+  for (( xori=1; xori<$xorargs; xori+=1 )) # loop from 1 to xorargs 
+  do
+    if [ $xori -eq 1 ]; then
+      xoria="$((xori+0))"
+      xorib="$((xori+1))"
+      xorres=$(bashXORbinstring ${!xoria} ${!xorib})
+    else
+      xorib="$((xori+1))"
+      xorres=$(bashXORbinstring $xorres ${!xorib})
+    fi
+  done
+  printf '%s' "$xorres"
+}
+
+## bashANDbinstringseries takes a series of bits and computs the logical AND
+# This is primarily used for the AES bitmask verification
+# bashANDbinstringseries "1" "1" "1"  will return a 1
+
+bashANDbinstringseries()
+{
+  andargs=$#                          # number of command line args
+  for (( andi=1; andi<$andargs; andi+=1 )) # loop from 1 to xorargs 
+  do
+    if [ $andi -eq 1 ]; then
+      andia="$((andi+0))"
+      andib="$((andi+1))"
+      andres=$(bashANDbinstring ${!andia} ${!andib})
+    else
+      andib="$((xori+1))"
+      andres=$(bashANDbinstring $andres ${!andib})
+    fi
+  done
+  printf '%s' "$andres"
+}
+
+
 bashANDbinstring()
 {
 STRBIN1=$1
 STRBIN2=$2
-printf '0000:'
+#printf '0000:'
 SEMI=${STRBIN1:4:1}
 if [[ "$SEMI" == ':' ]]; then 
   STRBIN1=${STRBIN1:5}
@@ -592,7 +660,7 @@ if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
       bbn_logicAND ${STRBIN1:$COUNTER1:1} ${STRBIN2:$COUNTER1:1}
     done 
 else
-  echoerr "ERROR, bashANDbinstring failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
+  echoerr "ERROR, ${FUNCNAME[0]} failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
 fi
 
 }
@@ -601,7 +669,7 @@ bashORbinstring()
 {
 STRBIN1=$1
 STRBIN2=$2
-printf '0000:'
+#printf '0000:'
 
 SEMI=${STRBIN1:4:1}
 if [[ "$SEMI" == ':' ]]; then 
@@ -619,14 +687,14 @@ if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
       bbn_logicOR ${STRBIN1:$COUNTER1:1} ${STRBIN2:$COUNTER1:1}
     done 
 else
-  echoerr "ERROR, bashORbinstring failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
+  echoerr "ERROR, ${FUNCNAME[0]} failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
 fi
 
 }
 
 bashNOTbinstring()
 {
-   printf '0000:'
+#   printf '0000:'
   STRBIN1=$1
   SEMI=${STRBIN1:4:1}
   if [[ "$SEMI" == ':' ]]; then 
@@ -644,7 +712,7 @@ bashNOTbinstring()
 #  of the words, we just assume that the roll right is a single bit.
 bashRORbinstring()
 {
-  printf '0000:'
+#  printf '0000:'
   STRBIN1=$1
   SEMI=${STRBIN1:4:1}
   if [[ "$SEMI" == ':' ]]; then 
@@ -662,7 +730,7 @@ bashRORbinstring()
 #  bashSHRbinstring shifts to the right by 1 and sign extend based off the MSB.
 bashSHRbinstring()
 {
-  printf '0000:'
+#  printf '0000:'
   STRBIN1=$1
   SEMI=${STRBIN1:4:1}
   if [[ "$SEMI" == ':' ]]; then 
@@ -678,7 +746,7 @@ bashSHRbinstring()
 
 bashROLbinstring()
 {
-  printf '0000:'
+#  printf '0000:'
   STRBIN1=$1
   SEMI=${STRBIN1:4:1}
   if [[ "$SEMI" == ':' ]]; then 
@@ -694,7 +762,7 @@ bashROLbinstring()
 
 bashSHLbinstring()
 {
-  printf '0000:'
+#  printf '0000:'
   SEMI=${STRBIN1:4:1}
   if [[ "$SEMI" == ':' ]]; then 
     STRBIN1=${STRBIN1:5}
@@ -755,7 +823,48 @@ bashINCbinstring()
   printf '%s\n' "$GVAR_RESULT"  
 }
 
+bashINCbinstring_conditions()
+{
+  gbashINCbinstring_conditions $1 $2 
+  printf '%s\n' "$GVAR_RESULT"  
+}
+
 gbashINCbinstring()  
+{
+#The INC instruction that returns to GVAR_RESULT
+STRBIN1=$1
+CARRY=0 #default carry value
+SRESULT=""
+
+    STRSIZE=${#STRBIN1}  #the string length of the argument
+    let STRSIZE=STRSIZE-1 #this is start the string at the correct location
+    for ((COUNTER1=STRSIZE; COUNTER1 >= 0 ; COUNTER1--))
+    do
+      A=${STRBIN1:$COUNTER1:1}
+      if [ $COUNTER1 -eq $STRSIZE ]; then
+        B="1"
+      else
+        B="0";
+      fi
+      bbn_ALU_add $A $B $CARRY  #sum as a bit
+      S=$GVAR_RESULT
+      bbn_ALU_addcarry $A $B $CARRY #carry
+      CARRY=$GVAR_RESULT
+      SRESULT="$SRESULT$S" #build the result bit series
+    done
+    # flip string
+    bbn_util_flipstring $SRESULT
+    SRESULT=$GVAR_RESULT
+
+    #DEBUG--REMOVE LATER
+    # printf '\n'
+    # printf 'A B S\n%d %d %d\n' "$A" "$B" "$S"
+    STRCONSTRUCT="$SRESULT" #add the status bits as a prefix
+    printf -v GVAR_RESULT '%s\n' "$STRCONSTRUCT"  
+     
+}
+
+gbashINCbinstring_conditions()  
 {
 #The INC instruction that returns to GVAR_RESULT
 STRBIN1=$1
@@ -812,7 +921,60 @@ bashADDbinstring()
   printf '%s\n' "$GVAR_RESULT"  
 }
 
-gbashADDbinstring()
+bashADDbinstring_conditions()
+{
+  gbashADDbinstring_conditions $1 $2 
+  printf '%s\n' "$GVAR_RESULT"  
+}
+
+gbashADDbinstring_conditions()
+{
+# the gbash version of the function returns the result in GVAR_RESULT so that 
+# subshells are not used.  In the case of the ADD, it allows MUCH faster multiplication
+# emulation.
+
+STRBIN1_ADD=$1
+STRBIN2_ADD=$2
+CARRY_ADD=0   #default carry value
+SRESULT_ADD=""
+#The first order to business is to cut off the condition codes if they were passed.
+
+#echo "gbashadd1: $STRBIN1"
+#echo "gbashadd2: $STRBIN2"
+#now on to the ADD calculation
+if [ ${#STRBIN1_ADD} -eq ${#STRBIN2_ADD} ]; then
+    STRSIZE_ADD=${#STRBIN1_ADD}  #the string length of the argument
+    let STRSIZE_ADD=STRSIZE_ADD-1 #this is start the string at the correct location
+    #the strings are left to right, but the math is right to left
+    for ((COUNTER1_ADD=STRSIZE_ADD; COUNTER1_ADD >= 0 ; COUNTER1_ADD--))
+    do
+      A_ADD=${STRBIN1_ADD:$COUNTER1_ADD:1}
+      B_ADD=${STRBIN2_ADD:$COUNTER1_ADD:1}
+      bbn_ALU_add $A_ADD $B_ADD $CARRY_ADD  #sum as a bit
+      S_ADD=$GVAR_RESULT
+      bbn_ALU_addcarry $A_ADD $B_ADD $CARRY_ADD #carry
+      CARRY_ADD=$GVAR_RESULT
+      SRESULT_ADD="$SRESULT_ADD$S_ADD" #build the result bit series
+    done
+#    echo "no flip $SRESULT_ADD, len: ${#SRESULT_ADD}"
+    # flip string
+    bbn_util_flipstring $SRESULT_ADD
+    SRESULT_ADD=$GVAR_RESULT
+#    echo "SRESULT_ADD $SRESULT_ADD, len: ${#SRESULT_ADD}"
+
+    STRCONSTRUCT_ADD="$SRESULT_ADD" #add the status bits as a prefix
+    printf -v GVAR_RESULT '%s' "$STRCONSTRUCT_ADD"
+   # printf '%s\n' "$STRCONSTRUCT"  
+     
+else
+  echoerr "ERROR, ${FUNCNAME[0]} failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
+  echoerr "STRBIN1: $STRBIN1"
+  echoerr "STRBIN2: $STRBIN2"
+fi
+
+}
+
+gbashADDbinstring_conditions()
 {
 # the gbash version of the function returns the result in GVAR_RESULT so that 
 # subshells are not used.  In the case of the ADD, it allows MUCH faster multiplication
@@ -870,13 +1032,12 @@ if [ ${#STRBIN1_ADD} -eq ${#STRBIN2_ADD} ]; then
    # printf '%s\n' "$STRCONSTRUCT"  
      
 else
-  echoerr "ERROR, (g)bashADDbinstring failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
+  echoerr "ERROR, ${FUNCNAME[0]} failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
   echoerr "STRBIN1: $STRBIN1"
   echoerr "STRBIN2: $STRBIN2"
 fi
 
 }
-
 
 bashMULbinstring()
 {  #multiply two binary words.  The interesting thing is that we will return a new word
@@ -885,10 +1046,6 @@ bashMULbinstring()
 STRBIN1_MUL=$1
 STRBIN2_MUL=$2
 #The first order to business is to cut off the condition codes if they were passed.
-SEMI_MUL=${STRBIN1_MUL:4:1}
-if [[ "$SEMI_MUL" == ':' ]]; then 
-  STRBIN1_MUL=${STRBIN1_MUL:5}
-fi
 
 if [ ${#STRBIN1_MUL} -eq ${#STRBIN2_MUL} ]; then
     STRSIZE_MUL=${#STRBIN1_MUL}  #the string length of the argument
@@ -936,11 +1093,74 @@ if [ ${#STRBIN1_MUL} -eq ${#STRBIN2_MUL} ]; then
        #echo "[$COUNTER1_MUL] loop SRESULT_MUL: $SRESULT_MUL"
     done
     #we need to condition codes for consistency
-    SRESULT_MUL="0000:$SRESULT_MUL"
+    SRESULT_MUL="$SRESULT_MUL"
 fi
   #printf -v GVAR_RESULT '%s' "$SRESULT"
   printf '%s' "$SRESULT_MUL"
 }
 
+bashMULbinstring_conditions()
+{  #multiply two binary words.  The interesting thing is that we will return a new word
+   #that is at most 2x the size of the words.  
+  
+STRBIN1_MUL=$1
+STRBIN2_MUL=$2
+#The first order to business is to cut off the condition codes if they were passed.
+SEMI_MUL=${STRBIN1_MUL:4:1}
+if [[ "$SEMI_MUL" == ':' ]]; then 
+  STRBIN1_MUL=${STRBIN1_MUL:5}
+fi
+
+if [ ${#STRBIN1_MUL} -eq ${#STRBIN2_MUL} ]; then
+    STRSIZE_MUL=${#STRBIN1_MUL}  #the string length of the argument
+    RESULTSIZE_MUL=$(($STRSIZE_MUL * 2)) #maximum length of multiplicative result
+    SRESULT_MUL=$(bashUTILzerowidth $RESULTSIZE_MUL) #create the result
+#    echo "result size: $RESULTSIZE"
+    STRBIN2_MUL=$(bashPADbinstring_conditions $STRBIN2_MUL $RESULTSIZE_MUL)
+    #strip the codes that comes from the PAD instruction
+    SEMI_MUL=${STRBIN2_MUL:4:1}
+    if [[ "$SEMI_MUL" == ':' ]]; then 
+      STRBIN2_MUL=${STRBIN2_MUL:5}
+    fi
+#    
+#    echo "SRESULT_MUL: $SRESULT_MUL"
+#    echo "STRBIN1_MUL: $STRBIN1_MUL"
+#    echo "STRBIN2_MUL: $STRBIN2_MUL"
+    
+    let STRSIZE_MUL=STRSIZE_MUL-1 #this is start the string at the correct location
+    for ((COUNTER1_MUL=STRSIZE_MUL; COUNTER1_MUL >= 0 ; COUNTER1_MUL--))
+    do
+       A_MUL=${STRBIN1_MUL:$COUNTER1_MUL:1}
+#       echo "[$COUNTER1_MUL] loop STRBIN1_MUL: $STRBIN1_MUL"
+#       echo "[$COUNTER1_MUL] loop STRBIN2_MUL: $STRBIN2_MUL"
+#       echo "[$COUNTER1_MUL] loop SRESULT_MUL: $SRESULT_MUL"       
+#       echo "[$COUNTER1_MUL] $STRBIN1_MUL is $A_MUL "
+       if [ $A_MUL -eq 1 ]; then  #if we have a 1, we add 
+        # SRESULT=$(bashADDbinstring $SRESULT $STRBIN2) #subshell
+         gbashADDbinstring $SRESULT_MUL $STRBIN2_MUL
+         SRESULT_MUL=$GVAR_RESULT
+#         echo "[$COUNTER1_MUL] init SRESULT_MUL: $SRESULT_MUL"
+         SEMI_MUL=${SRESULT_MUL:4:1}
+         if [[ "$SEMI_MUL" == ':' ]]; then 
+           SRESULT_MUL=${SRESULT_MUL:5}
+         fi         
+#         echo "[$COUNTER1_MUL] final SRESULT_MUL: $SRESULT_MUL"
+       fi
+       #the high bits of STRBIN2 should be 
+       STRBIN2_MUL=$(bashSHLbinstring $STRBIN2_MUL)
+       #we get the condition codes from SHL, so we remove them.
+       SEMI_MUL=${STRBIN2_MUL:4:1}
+       if [[ "$SEMI_MUL" == ':' ]]; then 
+         STRBIN2_MUL=${STRBIN2_MUL:5}
+       fi
+       #echo "[$COUNTER1_MUL] loop STRBIN2_MUL: $STRBIN2_MUL"
+       #echo "[$COUNTER1_MUL] loop SRESULT_MUL: $SRESULT_MUL"
+    done
+    #we need to condition codes for consistency
+    SRESULT_MUL="0000:$SRESULT_MUL"
+fi
+  #printf -v GVAR_RESULT '%s' "$SRESULT"
+  printf '%s' "$SRESULT_MUL"
+}
 
 

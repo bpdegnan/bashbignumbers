@@ -1,4 +1,4 @@
-bashbignumbers.sh, version 0.2.2
+bashbignumbers.sh, version 0.2.3
 
 This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  This is important if you want the "overflow" bit for instance.
 
@@ -8,9 +8,14 @@ bashNEGbinstring()  2' compliment of number
 bashINCbinstring()  Increment a number by 1
 bashADDbinstring()  The addition of two bin strings
 bashMULbinstring()  The multiplication of two bin strings
+bashINCbinstring_conditions()  Increment a number by 1, output conditions
+bashADDbinstring_conditions()  The addition of two bin strings, output conditions
+bashMULbinstring_conditions()  The multiplication of two bin strings, output conditions
 
 Logical:
 bashXORbinstring()  Logical XOR
+bashXORbinstringseries() Logical XOR, but takes a series of bits strings of equal widths
+bashANDbinstringseries() Logical AND, but takes a series of bits strings of equal widths
 bashANDbinstring()  Logical AND
 bashORbinstring()   Logical OR
 bashNOTbinstring()  Logical compliment
@@ -27,12 +32,12 @@ bashUTILhex2bin()   Convert a hex string to a binary string
 bashUTILzerowidth() Create a "zero" word of a width.
 
 
-As the names suggest, the arithmetic and logical functions operation on binary strings.  These binary strings should be considered to be as registers.  Furthermore, these binary strings had a prefix of 4-bits separated by a ":" because conditions codes are included.  The condition codes bits are ZCNV.  An example of an addition follows:
+As the names suggest, the arithmetic and logical functions operation on binary strings.  These binary strings should be considered to be as registers.  Furthermore if the function has the suffix "_conditions", these binary strings had a prefix of 4-bits separated by a ":" because conditions codes are included.  The condition codes bits are ZCNV.  An example of an addition follows:
 
 #Convert two numbers from hex into binary strings
 BINARG0=$(bashUTILhex2bin "92345")  
 BINARG1=$(bashUTILhex2bin "A789a")
-RESULTFULL=$(bashADDbinstring $BINARG0 $BINARG1) #ADD the ASCII binary representations
+RESULTFULL=$(bashADDbinstring_conditions $BINARG0 $BINARG1) #ADD the ASCII binary representations
 
 The result of will be "0101:00111001101111011111" in the RESULTFULL variable.  The condition codes can be either removed or the words can be passed as-is to the next function.  The functions all look for the ":" in the word and convert the binary string appropriately.
 
@@ -48,6 +53,8 @@ This will result in the value of:
 a325aa75a7335e84f11f80c46f0921ada9a4887620c583eff95f09e669df8634
 
 Revision History:
+
+version 0.2.3:  Started to removed the conditions from general functions as they are unused except in a few cases.  bashXORbinstringseries() added, which allows for a series of bits to be operated on in a series.  bashXORbinstringseries "1110" "1101" "1000" will return "1011".  bashANDbinstringseries() added as well
 
 version 0.2.2:  fixed an issue in the reorder code that was found in the MUL
 version 0.2.1:  Updated hex2bin function  
