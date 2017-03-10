@@ -348,7 +348,7 @@ bbn_ALU_add()
       fi  
 
 	else
-	   echoerr "ERROR, bbn_ALU_add due to argument count.  Wanted 3, got $#. " 
+	   echoerr "ERROR, ${FUNCNAME[0]} due to argument count.  Wanted 3, got $#. " 
 	   return -1
 	fi
 	printf -v GVAR_RESULT '%x' "$SUM"; 
@@ -388,7 +388,7 @@ bbn_ALU_addcarry()
         CARRY=0
       fi  
 	else
-	   echoerr "ERROR, bbn_ALU_addcarry due to argument count.  Wanted 3, got $#. " 
+	   echoerr "ERROR, ${FUNCNAME[0]} due to argument count.  Wanted 3, got $#. " 
 	   return -1
 	fi
 	printf -v GVAR_RESULT '%x' "$CARRY"; 
@@ -413,7 +413,7 @@ bbn_ALUflag_overflow()
 	    OVERFLOW=0
 	  fi	
 	else
-	   echoerr "ERROR, bbn_ALUflag_overflow due to argument count.  Wanted 3, got $#. " 
+	   echoerr "ERROR, ${FUNCNAME[0]} due to argument count.  Wanted 3, got $#. " 
 	   return -1
 	fi
 	printf -v GVAR_RESULT '%x' "$OVERFLOW"; 
@@ -591,7 +591,7 @@ if [ ${#STRBIN1} -eq ${#STRBIN2} ]; then
       bbn_logicXOR ${STRBIN1:$COUNTER1:1} ${STRBIN2:$COUNTER1:1}
     done 
 else
-  echoerr "ERROR, bashXORbinstring failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
+  echoerr "ERROR, ${FUNCNAME[0]} failed due to different lengths ${#STRBIN1}, ${#STRBIN2}" 
 fi
 
 }
@@ -631,7 +631,7 @@ bashANDbinstringseries()
       andib="$((andi+1))"
       andres=$(bashANDbinstring ${!andia} ${!andib})
     else
-      andib="$((xori+1))"
+      andib="$((andi+1))"
       andres=$(bashANDbinstring $andres ${!andib})
     fi
   done
