@@ -927,7 +927,7 @@ bashADDbinstring_conditions()
   printf '%s\n' "$GVAR_RESULT"  
 }
 
-gbashADDbinstring_conditions()
+gbashADDbinstring()
 {
 # the gbash version of the function returns the result in GVAR_RESULT so that 
 # subshells are not used.  In the case of the ADD, it allows MUCH faster multiplication
