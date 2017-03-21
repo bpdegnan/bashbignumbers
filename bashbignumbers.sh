@@ -43,7 +43,7 @@ echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
 programversion()
 {
-  PROGVERSION="0.2.3" 
+  PROGVERSION="0.2.4" 
   printf '%s\n' "$PROGVERSION" 
 }
 
@@ -636,6 +636,26 @@ bashANDbinstringseries()
     fi
   done
   printf '%s' "$andres"
+}
+
+## bashORbinstringseries takes a series of bits and computs the logical OR
+# bashORbinstringseries "1" "0" "0"  will return a 1
+
+bashORbinstringseries()
+{
+  orargs=$#                          # number of command line args
+  for (( ori=1; ori<$orargs; ori+=1 )) # loop from 1 to xorargs 
+  do
+    if [ $ori -eq 1 ]; then
+      oria="$((ori+0))"
+      orib="$((ori+1))"
+      orres=$(bashORbinstring ${!oria} ${!orib})
+    else
+      orib="$((ori+1))"
+      orres=$(bashORbinstring $orres ${!orib})
+    fi
+  done
+  printf '%s' "$orres"
 }
 
 

@@ -1,8 +1,9 @@
-bashbignumbers.sh, version 0.2.3
+bashbignumbers.sh, version 0.2.4
+21 MAR 2017
 
 This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  This is important if you want the "overflow" bit for instance.
 
-The basic functions in version 0.1.0 are the following:
+The basic functions are the following:
 Arithmetic:
 bashNEGbinstring()  2' compliment of number
 bashINCbinstring()  Increment a number by 1
@@ -16,6 +17,7 @@ Logical:
 bashXORbinstring()  Logical XOR
 bashXORbinstringseries() Logical XOR, but takes a series of bits strings of equal widths
 bashANDbinstringseries() Logical AND, but takes a series of bits strings of equal widths
+bashORbinstringseries()  Logical OR, but takes a series of bits strings of equal widths
 bashANDbinstring()  Logical AND
 bashORbinstring()   Logical OR
 bashNOTbinstring()  Logical compliment
@@ -53,6 +55,8 @@ This will result in the value of:
 a325aa75a7335e84f11f80c46f0921ada9a4887620c583eff95f09e669df8634
 
 Revision History:
+
+version 0.2.4:  Added the bashORbinstringseries() function.
 
 version 0.2.3:  Started to removed the conditions from general functions as they are unused except in a few cases.  bashXORbinstringseries() added, which allows for a series of bits to be operated on in a series.  bashXORbinstringseries "1110" "1101" "1000" will return "1011".  bashANDbinstringseries() added as well
 
