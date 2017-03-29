@@ -1,5 +1,5 @@
-bashbignumbers.sh, version 0.2.4
-21 MAR 2017
+bashbignumbers.sh, version 0.2.5
+29 MAR 2017
 
 This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  This is important if you want the "overflow" bit for instance.
 
@@ -32,6 +32,7 @@ Utility:
 bashUTILbin2hex()   Convert a binary string to a hex string
 bashUTILhex2bin()   Convert a hex string to a binary string
 bashUTILzerowidth() Create a "zero" word of a width.
+bashFLIPbinstring() Reverse the order of the binary string.
 
 
 As the names suggest, the arithmetic and logical functions operation on binary strings.  These binary strings should be considered to be as registers.  Furthermore if the function has the suffix "_conditions", these binary strings had a prefix of 4-bits separated by a ":" because conditions codes are included.  The condition codes bits are ZCNV.  An example of an addition follows:
@@ -56,10 +57,9 @@ a325aa75a7335e84f11f80c46f0921ada9a4887620c583eff95f09e669df8634
 
 Revision History:
 
+version 0.2.5:  Added the bashFLIPbinstring() function.
 version 0.2.4:  Added the bashORbinstringseries() function.
-
 version 0.2.3:  Started to removed the conditions from general functions as they are unused except in a few cases.  bashXORbinstringseries() added, which allows for a series of bits to be operated on in a series.  bashXORbinstringseries "1110" "1101" "1000" will return "1011".  bashANDbinstringseries() added as well
-
 version 0.2.2:  fixed an issue in the reorder code that was found in the MUL
 version 0.2.1:  Updated hex2bin function  
 version 0.2.0:  Removed internal subshells, added the MUL instruction.

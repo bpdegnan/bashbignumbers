@@ -43,7 +43,7 @@ echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
 programversion()
 {
-  PROGVERSION="0.2.4" 
+  PROGVERSION="0.2.5" 
   printf '%s\n' "$PROGVERSION" 
 }
 
@@ -478,6 +478,15 @@ bashUTILzerowidth()
     done 
     printf '%s' "$STRCONSTRUCT"  
 }
+
+#This function flips the bin string left right
+bashFLIPbinstring()
+{
+  STRBIN1=$1
+  bbn_util_flipstring $STRBIN1
+  printf '%s' "$GVAR_RESULT"    
+}
+
 
 ####################################################################################
 #  LOGICAL FUNCTIONS
