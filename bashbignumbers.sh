@@ -48,7 +48,7 @@ function echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
 function programversion()
 {
-  PROGVERSION="0.2.8"
+  PROGVERSION="0.2.9"
   printf '%s\n' "$PROGVERSION" 
 }
 
@@ -197,8 +197,15 @@ function bbn_util_charhex2bin()
         STRCONSTRUCT="1101"  ;;
     "E" )
         STRCONSTRUCT="1110"  ;;           
-    *) 
-        STRCONSTRUCT="1111"  ;; 
+    "f" )
+        STRCONSTRUCT="1111"  ;;
+    "F" )
+        STRCONSTRUCT="1111"  ;;
+    *)
+        #anything else is not a hex digit; signal it loudly instead of silently
+        #returning 1111 (which used to masquerade an invalid character as 'f')
+        echoerr "ERROR, ${FUNCNAME[0]} invalid hex digit: '$NIB'"
+        STRCONSTRUCT="XXXX"  ;;
   esac
   printf '%s' "$STRCONSTRUCT"
 }
@@ -243,7 +250,8 @@ function bbn_util_binnibble2charhex()
         STRCONSTRUCT="e"  ;;  
     "1111" )
         STRCONSTRUCT="f"  ;;     
-    *) 
+    *)
+        echoerr "ERROR, ${FUNCNAME[0]} invalid nibble: '$NIB'"
         STRCONSTRUCT="Z"  ;;   #Z is the error.
   esac
   printf '%s' "$STRCONSTRUCT"
@@ -444,8 +452,19 @@ function bashUTILbin2hex()
 {
   STRBIN1=$1
   SEMI=${STRBIN1:4:1}
-  if [[ "$SEMI" == ':' ]]; then 
+  if [[ "$SEMI" == ':' ]]; then
     STRBIN1=${STRBIN1:5}
+  fi
+  #reject anything that is not a binary string (empty is allowed and yields empty)
+  if ! [[ "$STRBIN1" =~ ^[01]*$ ]]; then
+    echoerr "ERROR, ${FUNCNAME[0]} invalid binary input (non 0/1 characters): '$1'"
+    return 1
+  fi
+  #the converter only handles whole nibbles; flag a ragged length instead of silently
+  #returning nothing
+  if [ $(( ${#STRBIN1} % 4 )) -ne 0 ]; then
+    echoerr "ERROR, ${FUNCNAME[0]} binary length ${#STRBIN1} is not a multiple of 4"
+    return 1
   fi
    SRESULT=$(bbn_util_bin2hex $STRBIN1)
    printf '%s' "$SRESULT"
@@ -459,8 +478,13 @@ function bashUTILhex2bin()
     STRBIN1=${STRBIN1:2}
   fi
   SEMI=${STRBIN1:1:1}
-  if [[ "$SEMI" == 'x' ]]; then 
+  if [[ "$SEMI" == 'x' ]]; then
     STRBIN1=${STRBIN1:2}
+  fi
+  #reject anything that is not a hex string (empty is allowed and yields empty)
+  if ! [[ "$STRBIN1" =~ ^[0-9a-fA-F]*$ ]]; then
+    echoerr "ERROR, ${FUNCNAME[0]} invalid hex input (non hex-digit characters): '$1'"
+    return 1
   fi
    SRESULT=$(bbn_util_hex2bin $STRBIN1)
    printf '%s' "$SRESULT"

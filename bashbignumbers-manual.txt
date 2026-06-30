@@ -1,4 +1,4 @@
-bashbignumbers.sh, version 0.2.8
+bashbignumbers.sh, version 0.2.9
 
 This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  This is important if you want the "overflow" bit for instance.
 
@@ -85,6 +85,7 @@ a325aa75a7335e84f11f80c46f0921ada9a4887620c583eff95f09e669df8634
 
 Revision History:
 
+version 0.2.9:  Hardened the hex/binary conversions.  bashUTILhex2bin() now rejects non-hex-digit input and bashUTILbin2hex() rejects non-binary input and lengths that are not a multiple of 4 (both print an error and return non-zero instead of producing a wrong or empty result).  bbn_util_charhex2bin() previously mapped any unrecognized character to "1111", silently masquerading invalid input as 'f'; it now has explicit f/F cases and flags a genuine error otherwise.
 version 0.2.8:  Added single-bit operations bashGETbit(), bashSETbit(), bashFLIPbit() (bit 0 is the LSB) for isolating and injecting single-bit errors, and bashCMPbinstring() which compares two words and reports the ZCNV flags without storing a result.
 version 0.2.7:  Added "_conditions" variants for the logical operations (XOR/AND/OR/NOT), the shifts and rotates (SHL/SHR/ROL/ROR), and SUB/NEG, so every operation can now emit ZCNV condition codes.  For the shifts/rotates the carry is the bit that leaves the word; for subtraction the carry is the inverse of the borrow (C=1 when A >= B).
 version 0.2.6:  Moved to git from svn.  Added subtraction and division: bashSUBbinstring(), bashDIVbinstring(), bashMODbinstring(), and bashDIVbinstring_conditions().  Division returns the quotient in GVAR_RESULT and the remainder in GVAR_REMAINDER.  Also hardened bashPADbinstring(), bashEXTbinstring(), and bashUTILzerowidth() to reset their accumulator so they no longer inherit a stale value when called outside a subshell.

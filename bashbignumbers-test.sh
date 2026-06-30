@@ -77,6 +77,23 @@ function cnd()
   assert_eq "$1 value" "$4" "$(bashUTILbin2hex ${2:5})"
 }
 
+# assert_err <label> <command> [args...]
+# Passes when the command rejects its input: non-zero exit and no value on stdout.
+function assert_err()
+{
+  ERR_LABEL=$1
+  shift
+  ERR_OUT=$("$@" 2>/dev/null)
+  ERR_RC=$?
+  if [ $ERR_RC -ne 0 ] && [ -z "$ERR_OUT" ]; then
+    PASSCOUNT=$((PASSCOUNT+1))
+    printf 'PASS  %-20s (rejected)\n' "$ERR_LABEL"
+  else
+    FAILCOUNT=$((FAILCOUNT+1))
+    printf 'FAIL  %-20s expected rejection, got rc=%s out=[%s]\n' "$ERR_LABEL" "$ERR_RC" "$ERR_OUT"
+  fi
+}
+
 
 printf "Testing the bashbignumbers library of name: $PROGNAME\n"
 printf "BASH version: "
@@ -184,6 +201,22 @@ assert_eq "FLIPbit pfx" "10101101" "$(bashFLIPbit 0000:$BITS 3)"
 assert_eq "CMP A<B" "0010" "$(bashCMPbinstring $BINARG0 $BINARG1)"
 assert_eq "CMP B>A" "0100" "$(bashCMPbinstring $BINARG1 $BINARG0)"
 assert_eq "CMP A==A" "1100" "$(bashCMPbinstring $BINARG0 $BINARG0)"
+
+
+####################################################################################
+#  INPUT VALIDATION (hex/binary hardening)
+#
+echo ""
+# valid conversions, including f/F and a 0x prefix, must still work
+assert_eq "hex ff"      "11111111" "$(bashUTILhex2bin ff)"
+assert_eq "hex F0"      "11110000" "$(bashUTILhex2bin F0)"
+assert_eq "hex 0x strip" "10100101" "$(bashUTILhex2bin 0xA5)"
+assert_eq "roundtrip"   "deadbeef" "$(bashUTILbin2hex $(bashUTILhex2bin deadbeef))"
+# invalid input is now rejected rather than silently mangled
+assert_err "hex bad char" bashUTILhex2bin "12g4"
+assert_err "hex non-hex"  bashUTILhex2bin "hello"
+assert_err "bin bad char" bashUTILbin2hex "10201"
+assert_err "bin ragged"   bashUTILbin2hex "101"
 
 
 ####################################################################################
