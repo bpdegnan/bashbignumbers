@@ -1,5 +1,4 @@
-bashbignumbers.sh, version 0.2.5
-29 MAR 2017
+bashbignumbers.sh, version 0.2.7
 
 This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  This is important if you want the "overflow" bit for instance.
 
@@ -8,10 +7,16 @@ Arithmetic:
 bashNEGbinstring()  2' compliment of number
 bashINCbinstring()  Increment a number by 1
 bashADDbinstring()  The addition of two bin strings
+bashSUBbinstring()  The subtraction of two bin strings (A - B, equal widths)
 bashMULbinstring()  The multiplication of two bin strings
+bashDIVbinstring()  The (integer) quotient of two bin strings (A / B, equal widths)
+bashMODbinstring()  The remainder of two bin strings (A mod B, equal widths)
 bashINCbinstring_conditions()  Increment a number by 1, output conditions
 bashADDbinstring_conditions()  The addition of two bin strings, output conditions
 bashMULbinstring_conditions()  The multiplication of two bin strings, output conditions
+bashDIVbinstring_conditions()  The quotient of two bin strings, output conditions
+
+Note on division: bashDIVbinstring() and bashMODbinstring() both perform the same shift/subtract long division.  A single call to the internal gbashDIVbinstring() produces BOTH results at once: the quotient in GVAR_RESULT and the remainder in GVAR_REMAINDER, which avoids dividing twice when you need both.  Dividing by zero prints an error, returns a zero quotient, and leaves the dividend as the remainder.
 
 Logical:
 bashXORbinstring()  Logical XOR
@@ -27,6 +32,13 @@ bashROLbinstring()  Roll Left, that wraps around
 bashSHLbinstring()  Shift left
 bashEXTbinstring()  extend the length of the binary word through sign extension
 bashPADbinstring()  extend the length of the binary word through 0 padding
+
+The logical, shift, rotate, and the SUB/NEG operations also have "_conditions"
+variants (bashXORbinstring_conditions, bashANDbinstring_conditions,
+bashORbinstring_conditions, bashNOTbinstring_conditions, bashSHLbinstring_conditions,
+bashSHRbinstring_conditions, bashROLbinstring_conditions, bashRORbinstring_conditions,
+bashSUBbinstring_conditions, bashNEGbinstring_conditions) that emit the "ZCNV:" prefix.
+For the logical operations C and V are always 0.  For the shifts and rotates, C is the bit that leaves the word (the shifted/rotated-out bit) and V is 0.  For subtraction, C follows the x86/ARM/68k convention of being the inverse of the borrow (C=1 when A >= B), and V is the signed overflow.  Negation is treated as 0 - A, so its flags follow the subtraction rules (V is set only when negating the most-negative value).
 
 Utility:
 bashUTILbin2hex()   Convert a binary string to a hex string
@@ -57,6 +69,8 @@ a325aa75a7335e84f11f80c46f0921ada9a4887620c583eff95f09e669df8634
 
 Revision History:
 
+version 0.2.7:  Added "_conditions" variants for the logical operations (XOR/AND/OR/NOT), the shifts and rotates (SHL/SHR/ROL/ROR), and SUB/NEG, so every operation can now emit ZCNV condition codes.  For the shifts/rotates the carry is the bit that leaves the word; for subtraction the carry is the inverse of the borrow (C=1 when A >= B).
+version 0.2.6:  Moved to git from svn.  Added subtraction and division: bashSUBbinstring(), bashDIVbinstring(), bashMODbinstring(), and bashDIVbinstring_conditions().  Division returns the quotient in GVAR_RESULT and the remainder in GVAR_REMAINDER.  Also hardened bashPADbinstring(), bashEXTbinstring(), and bashUTILzerowidth() to reset their accumulator so they no longer inherit a stale value when called outside a subshell.
 version 0.2.5:  Added the bashFLIPbinstring() function.
 version 0.2.4:  Added the bashORbinstringseries() function.
 version 0.2.3:  Started to removed the conditions from general functions as they are unused except in a few cases.  bashXORbinstringseries() added, which allows for a series of bits to be operated on in a series.  bashXORbinstringseries "1110" "1101" "1000" will return "1011".  bashANDbinstringseries() added as well

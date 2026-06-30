@@ -22,7 +22,12 @@ export GVAR_FLAG_CARRY=0
 export GVAR_FLAG_NEGATIVE=0
 
 #subshells are SLOW.  I had no idea until I started really pounding this code.
-export GVAR_RESULT  
+export GVAR_RESULT
+# GVAR_REMAINDER holds the remainder produced by the division (gbashDIVbinstring),
+# since a BASH function can only return one value through GVAR_RESULT (the quotient).
+export GVAR_REMAINDER
+# GVAR_SUB_BORROW holds the final borrow out of gbashSUBbinstring (1 if A < B).
+export GVAR_SUB_BORROW=0
 # due to speed considerations, GVAR_RESULT can be used if not subshells are called
 # I am gradually changing the code so that printf -v GVAR_RESULT can be used to set 
 # the final return variable.  I assume that these functions will be called as subshells,
@@ -43,7 +48,7 @@ function echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
 function programversion()
 {
-  PROGVERSION="0.2.5" 
+  PROGVERSION="0.2.7"
   printf '%s\n' "$PROGVERSION" 
 }
 
@@ -465,6 +470,7 @@ function bashUTILhex2bin()
 function bashUTILzerowidth()
 {
 	STRNUM=$1 #this number is a bit width, but I only support nibble width
+	STRCONSTRUCT="" #reset; this builds by appending and must not inherit a stale value
 	STRMOD=$(( STRNUM % 4 )) # find if the modulus
 	if [ $STRMOD -ne 0 ] ; then
 	  let STRNUM=STRNUM-STRMOD
@@ -500,6 +506,7 @@ function bashPADbinstring()
 # the first argument is the binary representation, and second is the length
 STRBIN1=$1
 STRBIN2=$2
+STRCONSTRUCT="" #reset; this builds by appending and must not inherit a stale value
 
 STRSIZE=${#STRBIN1} #the length of the string
 #if STRSIZE is less than the argument of STRBIN, then you make the string longer
@@ -528,6 +535,7 @@ SEMI=${STRBIN1:4:1}  #remove the status
 if [[ "$SEMI" == ':' ]]; then 
   STRBIN1=${STRBIN1:5}
 fi
+STRCONSTRUCT="" #reset; this builds by appending and must not inherit a stale value
 
 STRSIZE=${#STRBIN1} #the length of the string
 #if STRSIZE is less than the argument of STRBIN, then you make the string longer
@@ -561,6 +569,7 @@ fi
 STRSIZE=${#STRBIN1} #the length of the string
 #if STRSIZE is less than the argument of STRBIN, then you make the string longer
 if [ $STRSIZE -lt $STRBIN2 ]; then
+  STRCONSTRUCT="" #reset; this builds by appending and must not inherit a stale value
   DIFSIZE=$(($STRBIN2-$STRSIZE)) #due to the conditional, this will NEVER be negative
   SEMI=${STRBIN1:0:1} #get the first character.
   for ((COUNTER1=0; COUNTER1 < DIFSIZE ; COUNTER1++))
@@ -1189,6 +1198,281 @@ if [ ${#STRBIN1_MUL} -eq ${#STRBIN2_MUL} ]; then
 fi
   #printf -v GVAR_RESULT '%s' "$SRESULT"
   printf '%s' "$SRESULT_MUL"
+}
+
+
+# This function subtracts two binary string representations of the same size.
+# It is the natural counterpart to the ADD and is required by the division below.
+# The result is A - B taken modulo 2^width (the same width as the inputs).  The
+# final borrow is exposed in GVAR_SUB_BORROW (1 means A < B, i.e. the result wrapped).
+function gbashSUBbinstring()
+{
+STRBIN1_SUB=$1
+STRBIN2_SUB=$2
+BORROW_SUB=0
+SRESULT_SUB=""
+if [ ${#STRBIN1_SUB} -eq ${#STRBIN2_SUB} ]; then
+    STRSIZE_SUB=${#STRBIN1_SUB}  #the string length of the argument
+    let STRSIZE_SUB=STRSIZE_SUB-1 #this is start the string at the correct location
+    #the strings are left to right, but the math is right to left
+    for ((COUNTER1_SUB=STRSIZE_SUB; COUNTER1_SUB >= 0 ; COUNTER1_SUB--))
+    do
+      A_SUB=${STRBIN1_SUB:$COUNTER1_SUB:1}
+      B_SUB=${STRBIN2_SUB:$COUNTER1_SUB:1}
+      #full subtractor: difference = A - B - borrow, on a single bit
+      DIFF_SUB=$((A_SUB - B_SUB - BORROW_SUB))
+      if [ $DIFF_SUB -lt 0 ]; then
+        DIFF_SUB=$((DIFF_SUB + 2)) #borrow from the next column
+        BORROW_SUB=1
+      else
+        BORROW_SUB=0
+      fi
+      SRESULT_SUB="$SRESULT_SUB$DIFF_SUB" #build the result bit series
+    done
+    # flip string (the math built it LSB to MSB)
+    bbn_util_flipstring $SRESULT_SUB
+    SRESULT_SUB=$GVAR_RESULT
+    GVAR_SUB_BORROW=$BORROW_SUB
+    printf -v GVAR_RESULT '%s' "$SRESULT_SUB"
+else
+  echoerr "ERROR, ${FUNCNAME[0]} failed due to different lengths ${#STRBIN1_SUB}, ${#STRBIN2_SUB}"
+fi
+}
+
+function bashSUBbinstring()
+{
+  gbashSUBbinstring $1 $2
+  printf '%s\n' "$GVAR_RESULT"
+}
+
+
+# This function divides two binary string representations of the same size using
+# the classic shift/subtract (restoring) long-division algorithm, just as it would
+# be done in hardware.  Both the quotient and the remainder are produced:
+#   GVAR_RESULT    = quotient  (same width as the inputs)
+#   GVAR_REMAINDER = remainder (same width as the inputs)
+# A divide-by-zero leaves a zero quotient and a remainder equal to the dividend, and
+# prints an error to STDERR.
+function gbashDIVbinstring()
+{
+STRBIN1_DIV=$1   #dividend
+STRBIN2_DIV=$2   #divisor
+
+if [ ${#STRBIN1_DIV} -ne ${#STRBIN2_DIV} ]; then
+  echoerr "ERROR, ${FUNCNAME[0]} failed due to different lengths ${#STRBIN1_DIV}, ${#STRBIN2_DIV}"
+  return 1
+fi
+
+STRSIZE_DIV=${#STRBIN1_DIV}  #the bit width of the operands
+
+#build a zero string of the operand width (used for the quotient/remainder seed)
+ZERO_DIV=""
+for ((COUNTER1_DIV=0; COUNTER1_DIV < STRSIZE_DIV ; COUNTER1_DIV++))
+do
+  ZERO_DIV="${ZERO_DIV}0"
+done
+
+#guard against division by zero
+bbn_ALUflag_zero $STRBIN2_DIV
+if [ "$GVAR_RESULT" -eq 1 ]; then
+  echoerr "ERROR, ${FUNCNAME[0]} division by zero"
+  GVAR_REMAINDER=$STRBIN1_DIV
+  printf -v GVAR_RESULT '%s' "$ZERO_DIV"
+  return 1
+fi
+
+Q_DIV=""           #quotient, built MSB first
+R_DIV=$ZERO_DIV    #running remainder, width STRSIZE_DIV
+DP_DIV="0$STRBIN2_DIV" #divisor padded to width+1 so the trial shift cannot overflow
+
+#process the dividend one bit at a time, from MSB to LSB
+for ((COUNTER1_DIV=0; COUNTER1_DIV < STRSIZE_DIV ; COUNTER1_DIV++))
+do
+  BIT_DIV=${STRBIN1_DIV:$COUNTER1_DIV:1}
+  RP_DIV="${R_DIV}${BIT_DIV}" #shift remainder left and bring in the next dividend bit (width+1)
+  #trial subtraction: if it does not borrow, the divisor fit and the quotient bit is 1
+  gbashSUBbinstring $RP_DIV $DP_DIV
+  if [ "$GVAR_SUB_BORROW" -eq 0 ]; then
+    RP_DIV=$GVAR_RESULT  #keep the subtracted value
+    Q_DIV="${Q_DIV}1"
+  else
+    Q_DIV="${Q_DIV}0"    #divisor did not fit; remainder is unchanged
+  fi
+  R_DIV=${RP_DIV:1}      #drop the (now always 0) top bit, back to width STRSIZE_DIV
+done
+
+GVAR_REMAINDER=$R_DIV
+printf -v GVAR_RESULT '%s' "$Q_DIV"
+}
+
+function bashDIVbinstring()
+{
+  gbashDIVbinstring $1 $2
+  printf '%s\n' "$GVAR_RESULT"
+}
+
+function bashMODbinstring()
+{
+  gbashDIVbinstring $1 $2
+  printf '%s\n' "$GVAR_REMAINDER"
+}
+
+function bashDIVbinstring_conditions()
+{
+  STRBIN1_DIVC=$1
+  STRBIN2_DIVC=$2
+  #cut off the condition codes if they were passed.
+  SEMI_DIVC=${STRBIN1_DIVC:4:1}
+  if [[ "$SEMI_DIVC" == ':' ]]; then
+    STRBIN1_DIVC=${STRBIN1_DIVC:5}
+  fi
+  SEMI_DIVC=${STRBIN2_DIVC:4:1}
+  if [[ "$SEMI_DIVC" == ':' ]]; then
+    STRBIN2_DIVC=${STRBIN2_DIVC:5}
+  fi
+
+  gbashDIVbinstring $STRBIN1_DIVC $STRBIN2_DIVC
+  Q_DIVC=$GVAR_RESULT
+
+  #set the flags.  Carry and overflow are not meaningful for division.
+  bbn_ALUflag_zero $Q_DIVC
+  GVAR_FLAG_ZERO=$GVAR_RESULT
+  GVAR_FLAG_CARRY=0
+  GVAR_FLAG_NEGATIVE=${Q_DIVC:0:1} #sign bit (MSB), as the other functions report it
+  GVAR_FLAG_OVERFLOW=0
+  printf '%s\n' "$GVAR_FLAG_ZERO$GVAR_FLAG_CARRY$GVAR_FLAG_NEGATIVE$GVAR_FLAG_OVERFLOW:$Q_DIVC"
+}
+
+
+####################################################################################
+#  CONDITION-CODE VARIANTS
+#  Each function below mirrors a plain operation but emits the "ZCNV:" condition-code
+#  prefix.  The flags are:
+#    Z (zero)     : the result is all zeros
+#    C (carry)    : see the per-function note (carry-out, shifted-out bit, etc.)
+#    N (negative) : the most-significant bit of the result
+#    V (overflow) : signed overflow (only meaningful for the arithmetic operations)
+#  The logical operations have no natural carry or overflow, so C and V are 0.
+#
+
+# bbn_util_emitconditions <resultbits> <carrybit> <overflowbit>
+# Derives Z and N from the result, takes C and V as given, sets the GVAR_FLAG_*
+# globals, and prints "ZCNV:result".
+function bbn_util_emitconditions()
+{
+  EMIT_RESULT=$1
+  EMIT_C=$2
+  EMIT_V=$3
+  bbn_ALUflag_zero "$EMIT_RESULT"
+  GVAR_FLAG_ZERO=$GVAR_RESULT
+  GVAR_FLAG_CARRY=$EMIT_C
+  GVAR_FLAG_NEGATIVE=${EMIT_RESULT:0:1}
+  GVAR_FLAG_OVERFLOW=$EMIT_V
+  printf '%s\n' "$GVAR_FLAG_ZERO$GVAR_FLAG_CARRY$GVAR_FLAG_NEGATIVE$GVAR_FLAG_OVERFLOW:$EMIT_RESULT"
+}
+
+# Signed overflow for subtraction A - B: set when the operands have different
+# signs and the result's sign differs from A's sign.
+function bbn_ALUflag_overflow_sub()
+{
+  if [ "$#" -eq 3 ]; then
+    OA_SUB=$1; OB_SUB=$2; OS_SUB=$3
+    if [ "$OA_SUB" -ne "$OB_SUB" ] && [ "$OS_SUB" -ne "$OA_SUB" ]; then
+      OV_SUB=1
+    else
+      OV_SUB=0
+    fi
+  else
+    echoerr "ERROR, ${FUNCNAME[0]} due to argument count.  Wanted 3, got $#. "
+    return 1
+  fi
+  printf -v GVAR_RESULT '%s' "$OV_SUB"
+}
+
+# --- Logical (C=0, V=0) ---
+function bashXORbinstring_conditions()
+{
+  CRESULT=$(bashXORbinstring "$1" "$2")
+  bbn_util_emitconditions "$CRESULT" 0 0
+}
+function bashANDbinstring_conditions()
+{
+  CRESULT=$(bashANDbinstring "$1" "$2")
+  bbn_util_emitconditions "$CRESULT" 0 0
+}
+function bashORbinstring_conditions()
+{
+  CRESULT=$(bashORbinstring "$1" "$2")
+  bbn_util_emitconditions "$CRESULT" 0 0
+}
+function bashNOTbinstring_conditions()
+{
+  CRESULT=$(bashNOTbinstring "$1")
+  bbn_util_emitconditions "$CRESULT" 0 0
+}
+
+# --- Shifts / rotates (C = the bit that leaves the word, V=0) ---
+function bashSHLbinstring_conditions()
+{
+  CIN=$(bbn_util_removeflags "$1")
+  CCARRY=${CIN:0:1}                     #bit shifted out of the MSB
+  CRESULT=$(bashSHLbinstring "$CIN")
+  bbn_util_emitconditions "$CRESULT" "$CCARRY" 0
+}
+function bashROLbinstring_conditions()
+{
+  CIN=$(bbn_util_removeflags "$1")
+  CCARRY=${CIN:0:1}                     #bit rotated out of the MSB
+  CRESULT=$(bashROLbinstring "$CIN")
+  bbn_util_emitconditions "$CRESULT" "$CCARRY" 0
+}
+function bashSHRbinstring_conditions()
+{
+  CIN=$(bbn_util_removeflags "$1")
+  CLEN=${#CIN}
+  CCARRY=${CIN:$((CLEN-1)):1}           #bit shifted out of the LSB
+  CRESULT=$(bashSHRbinstring "$CIN")
+  bbn_util_emitconditions "$CRESULT" "$CCARRY" 0
+}
+function bashRORbinstring_conditions()
+{
+  CIN=$(bbn_util_removeflags "$1")
+  CLEN=${#CIN}
+  CCARRY=${CIN:$((CLEN-1)):1}           #bit rotated out of the LSB
+  CRESULT=$(bashRORbinstring "$CIN")
+  bbn_util_emitconditions "$CRESULT" "$CCARRY" 0
+}
+
+# --- Subtraction (C = NOT borrow: C=1 means A >= B, the x86/ARM/68k convention) ---
+function bashSUBbinstring_conditions()
+{
+  CA=$(bbn_util_removeflags "$1")
+  CB=$(bbn_util_removeflags "$2")
+  gbashSUBbinstring "$CA" "$CB"         #sets GVAR_RESULT and GVAR_SUB_BORROW
+  CRESULT=$GVAR_RESULT
+  if [ "$GVAR_SUB_BORROW" -eq 0 ]; then CCARRY=1; else CCARRY=0; fi
+  bbn_ALUflag_overflow_sub "${CA:0:1}" "${CB:0:1}" "${CRESULT:0:1}"
+  CV=$GVAR_RESULT
+  bbn_util_emitconditions "$CRESULT" "$CCARRY" "$CV"
+}
+
+# --- Negation (implemented as 0 - A, so the flags follow the subtraction rules;
+#     V is set only for the most-negative input, which cannot be negated) ---
+function bashNEGbinstring_conditions()
+{
+  CA=$(bbn_util_removeflags "$1")
+  CZERO=""
+  CLEN=${#CA}
+  for ((CI=0; CI < CLEN ; CI++))
+  do
+    CZERO="${CZERO}0"
+  done
+  gbashSUBbinstring "$CZERO" "$CA"      #0 - A is the two's complement
+  CRESULT=$GVAR_RESULT
+  if [ "$GVAR_SUB_BORROW" -eq 0 ]; then CCARRY=1; else CCARRY=0; fi
+  bbn_ALUflag_overflow_sub "${CZERO:0:1}" "${CA:0:1}" "${CRESULT:0:1}"
+  CV=$GVAR_RESULT
+  bbn_util_emitconditions "$CRESULT" "$CCARRY" "$CV"
 }
 
 
