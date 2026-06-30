@@ -39,25 +39,25 @@ export GVAR_RESULT
 #  sed
 #
 #
-echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
+function echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
-programversion()
+function programversion()
 {
   PROGVERSION="0.2.5" 
   printf '%s\n' "$PROGVERSION" 
 }
 
-bbn_util_printflags()
+function bbn_util_printflags()
 {
   printf 'Z C N V\n%d %d %d %d\n' "$GVAR_FLAG_ZERO" "$GVAR_FLAG_CARRY" "$GVAR_FLAG_NEGATIVE" "$GVAR_FLAG_OVERFLOW"
 }
 
-bbn_util_lowercase(){
+function bbn_util_lowercase(){
 # convert the uppercase to lowercase
     echo "$1" | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/"
 }
 
-bbn_util_removeflags()
+function bbn_util_removeflags()
 {
   #remove the prefix flags
   STRBIN1=$1
@@ -69,7 +69,7 @@ bbn_util_removeflags()
   printf '%s' "$STRBIN1"  
 }
 
-bbn_util_flipstring()
+function bbn_util_flipstring()
 {
 #reorder string.  This is needed because the math functions work LSB to MSB
   flipvar=$1
@@ -85,7 +85,7 @@ bbn_util_flipstring()
   printf -v GVAR_RESULT '%s' "$FLIPSTRCONSTRUCT"
 }
 
-bbn_util_bin2hex()
+function bbn_util_bin2hex()
 {  # Take a string as 10000101 and return 87.  I cannot use the built-in
    # printf '%x : ' "$((2#$RESULTXOR))" because I only can do 64-bits in bash
    # and I have values that are up to 256-bits
@@ -119,7 +119,7 @@ bbn_util_bin2hex()
 }
 
 ## bbn_util_hex2bin() Hex number to binary string
-bbn_util_hex2bin()
+function bbn_util_hex2bin()
 {
 #  Take a value as a hex number and convert it to a binary string
 #
@@ -144,7 +144,7 @@ bbn_util_hex2bin()
 }
 
 ## bbn_util_charhex2bin() take a hexadecimal nibble and make it a binary sequence
-bbn_util_charhex2bin()
+function bbn_util_charhex2bin()
 {
 #  Take a nibble as an argument, and return a binary represntation
 #
@@ -199,7 +199,7 @@ bbn_util_charhex2bin()
 }
 
 ## bbn_util_binnibble2charhex() take a nibble in binary and turn it into a hexadecimal
-bbn_util_binnibble2charhex()
+function bbn_util_binnibble2charhex()
 {
 
   NIB=$1  #this should be as string of 4 from 0 to 1
@@ -247,7 +247,7 @@ bbn_util_binnibble2charhex()
 ## bbn_util_getbinlength() get the length or greatest length of a binary string 
 ##                         representation of a number or a series of numbers
 #
-bbn_util_getbinlength()
+function bbn_util_getbinlength()
 {
   MAXLEN=0
   for STRARG in "$@"
@@ -269,7 +269,7 @@ bbn_util_getbinlength()
 
 
 
-bbn_logicXOR() 
+function bbn_logicXOR() 
 {	if (( $1 ^ $2 )) ;then
 		STRCONSTRUCT="1"
 	else
@@ -278,7 +278,7 @@ bbn_logicXOR()
     printf '%s' "$STRCONSTRUCT"
 }
 
-bbn_logicOR() 
+function bbn_logicOR() 
 {	if (( $1 | $2 )) ;then
 		STRCONSTRUCT="1"
 	else
@@ -287,7 +287,7 @@ bbn_logicOR()
 	printf '%s' "$STRCONSTRUCT"
 }
 
-bbn_logicAND() 
+function bbn_logicAND() 
 {	if (( $1 & $2 )) ;then
 		STRCONSTRUCT="1"
 	else
@@ -295,7 +295,7 @@ bbn_logicAND()
 	fi
 	printf '%s' "$STRCONSTRUCT"
 }
-bbn_logicNOT() 
+function bbn_logicNOT() 
 {	if (( $1 )) ;then
 		STRCONSTRUCT="0"
 	else
@@ -314,7 +314,7 @@ bbn_logicNOT()
 # to pass sturctured data, you really shouldn't be using BASH.
 # This is why I have two functions, one for the ADD and one for the carry bit
 
-bbn_ALU_add() 
+function bbn_ALU_add() 
 {	# I expect inputs of A, B and C, the carry
     # This function simulates the logic of an addition but the carry logic is a 
     # separate function
@@ -354,7 +354,7 @@ bbn_ALU_add()
 	printf -v GVAR_RESULT '%x' "$SUM"; 
 }
 
-bbn_ALU_addcarry() 
+function bbn_ALU_addcarry() 
 {	# I expect inputs of A, B and C, the carry
     # This function simulates the logic of an addition carry logic but the add logic is a 
     # separate function
@@ -394,7 +394,7 @@ bbn_ALU_addcarry()
 	printf -v GVAR_RESULT '%x' "$CARRY"; 
 }
 
-bbn_ALUflag_overflow() 
+function bbn_ALUflag_overflow() 
 { #calculate the overflow logic
   #if the sum of two positive numbers yields a negative result: overflow
   #if the sum of two negative numbers yields a positive result: overflow
@@ -419,7 +419,7 @@ bbn_ALUflag_overflow()
 	printf -v GVAR_RESULT '%x' "$OVERFLOW"; 
 }
 
-bbn_ALUflag_zero() 
+function bbn_ALUflag_zero() 
 { #check if a number is zero
   if [[ $1 =~ ^[0]+$ ]]; then
     STRCONSTRUCT="1"
@@ -435,7 +435,7 @@ bbn_ALUflag_zero()
 #  These functions are for conversions, etc.  They use subshells.
 #
 #
-bashUTILbin2hex()
+function bashUTILbin2hex()
 {
   STRBIN1=$1
   SEMI=${STRBIN1:4:1}
@@ -446,7 +446,7 @@ bashUTILbin2hex()
    printf '%s' "$SRESULT"
 }
 
-bashUTILhex2bin()
+function bashUTILhex2bin()
 {  #remove the 0x or 0X if it exists on the hex value.
   STRBIN1=$1
   SEMI=${STRBIN1:1:1}
@@ -462,7 +462,7 @@ bashUTILhex2bin()
 }
 
 #this creates a 
-bashUTILzerowidth()
+function bashUTILzerowidth()
 {
 	STRNUM=$1 #this number is a bit width, but I only support nibble width
 	STRMOD=$(( STRNUM % 4 )) # find if the modulus
@@ -480,7 +480,7 @@ bashUTILzerowidth()
 }
 
 #This function flips the bin string left right
-bashFLIPbinstring()
+function bashFLIPbinstring()
 {
   STRBIN1=$1
   bbn_util_flipstring $STRBIN1
@@ -494,7 +494,7 @@ bashFLIPbinstring()
 #
 #
 
-bashPADbinstring()
+function bashPADbinstring()
 {
 #this is a padding function that puts a 0 prefix
 # the first argument is the binary representation, and second is the length
@@ -516,7 +516,7 @@ if [ $STRSIZE -lt $STRBIN2 ]; then
 fi
 }
 
-bashPADbinstring_contitions()
+function bashPADbinstring_contitions()
 {
 #this is a padding function that puts a 0 prefix
 # the first argument is the binary representation, and second is the length
@@ -545,7 +545,7 @@ fi
 
 }
 
-bashEXTbinstring()
+function bashEXTbinstring()
 {
 #this is a sign extension.
 # the first argument is the binary representation, and second is the length
@@ -574,7 +574,7 @@ fi
 
 }
 
-bashXORbinstring()
+function bashXORbinstring()
 {
 # Take a string, such as arguments 1, 2:
 # 10100001
@@ -609,7 +609,7 @@ fi
 # This is primarily used for the AES bitmask verification
 # bashXORbinstringseries "1" "1" "1"  will return a 1
 # bashXORbinstringseries "11" "11" "00" will return a "00"
-bashXORbinstringseries()
+function bashXORbinstringseries()
 {
   xorargs=$#                          # number of command line args
   for (( xori=1; xori<$xorargs; xori+=1 )) # loop from 1 to xorargs 
@@ -630,7 +630,7 @@ bashXORbinstringseries()
 # This is primarily used for the AES bitmask verification
 # bashANDbinstringseries "1" "1" "1"  will return a 1
 
-bashANDbinstringseries()
+function bashANDbinstringseries()
 {
   andargs=$#                          # number of command line args
   for (( andi=1; andi<$andargs; andi+=1 )) # loop from 1 to xorargs 
@@ -650,7 +650,7 @@ bashANDbinstringseries()
 ## bashORbinstringseries takes a series of bits and computs the logical OR
 # bashORbinstringseries "1" "0" "0"  will return a 1
 
-bashORbinstringseries()
+function bashORbinstringseries()
 {
   orargs=$#                          # number of command line args
   for (( ori=1; ori<$orargs; ori+=1 )) # loop from 1 to xorargs 
@@ -668,7 +668,7 @@ bashORbinstringseries()
 }
 
 
-bashANDbinstring()
+function bashANDbinstring()
 {
 STRBIN1=$1
 STRBIN2=$2
@@ -694,7 +694,7 @@ fi
 
 }
 
-bashORbinstring()
+function bashORbinstring()
 {
 STRBIN1=$1
 STRBIN2=$2
@@ -721,7 +721,7 @@ fi
 
 }
 
-bashNOTbinstring()
+function bashNOTbinstring()
 {
 #   printf '0000:'
   STRBIN1=$1
@@ -739,7 +739,7 @@ bashNOTbinstring()
 ##
 #  bashRORbinstring rolls to the right by 1.  Because we have no idea of the length
 #  of the words, we just assume that the roll right is a single bit.
-bashRORbinstring()
+function bashRORbinstring()
 {
 #  printf '0000:'
   STRBIN1=$1
@@ -757,7 +757,7 @@ bashRORbinstring()
 
 ##
 #  bashSHRbinstring shifts to the right by 1 and sign extend based off the MSB.
-bashSHRbinstring()
+function bashSHRbinstring()
 {
 #  printf '0000:'
   STRBIN1=$1
@@ -773,7 +773,7 @@ bashSHRbinstring()
   printf '%s' "$STRCONSTRUCT"  
 }
 
-bashROLbinstring()
+function bashROLbinstring()
 {
 #  printf '0000:'
   STRBIN1=$1
@@ -789,7 +789,7 @@ bashROLbinstring()
   printf '%s' "$STRCONSTRUCT"  
 }
 
-bashSHLbinstring()
+function bashSHLbinstring()
 {
 #  printf '0000:'
   STRBIN1=$1
@@ -824,12 +824,12 @@ bashSHLbinstring()
 
 # This function negates a number, ie: 2's compliment
 # You invert the string and add one
-bashNEGbinstring()
+function bashNEGbinstring()
 {
   gbashNEGbinstring $1 
   printf '%s\n' "$GVAR_RESULT"  
 }
-gbashNEGbinstring() 
+function gbashNEGbinstring() 
 {
 STRBIN1=$1
 SEMI=${STRBIN1:4:1}
@@ -845,19 +845,19 @@ fi
 # This function increments a binary string representation of any size.
 # This function is identical to the ADD function but with a fixed value
 # for the second bin tring
-bashINCbinstring()
+function bashINCbinstring()
 {
   gbashINCbinstring $1 $2 
   printf '%s\n' "$GVAR_RESULT"  
 }
 
-bashINCbinstring_conditions()
+function bashINCbinstring_conditions()
 {
   gbashINCbinstring_conditions $1 $2 
   printf '%s\n' "$GVAR_RESULT"  
 }
 
-gbashINCbinstring()  
+function gbashINCbinstring()  
 {
 #The INC instruction that returns to GVAR_RESULT
 STRBIN1=$1
@@ -892,7 +892,7 @@ SRESULT=""
      
 }
 
-gbashINCbinstring_conditions()  
+function gbashINCbinstring_conditions()  
 {
 #The INC instruction that returns to GVAR_RESULT
 STRBIN1=$1
@@ -943,19 +943,19 @@ fi
 }
 
 #This function adds two binary string representations of the same size
-bashADDbinstring()
+function bashADDbinstring()
 {
   gbashADDbinstring $1 $2 
   printf '%s\n' "$GVAR_RESULT"  
 }
 
-bashADDbinstring_conditions()
+function bashADDbinstring_conditions()
 {
   gbashADDbinstring_conditions $1 $2 
   printf '%s\n' "$GVAR_RESULT"  
 }
 
-gbashADDbinstring()
+function gbashADDbinstring()
 {
 # the gbash version of the function returns the result in GVAR_RESULT so that 
 # subshells are not used.  In the case of the ADD, it allows MUCH faster multiplication
@@ -1002,7 +1002,7 @@ fi
 
 }
 
-gbashADDbinstring_conditions()
+function gbashADDbinstring_conditions()
 {
 # the gbash version of the function returns the result in GVAR_RESULT so that 
 # subshells are not used.  In the case of the ADD, it allows MUCH faster multiplication
@@ -1067,7 +1067,7 @@ fi
 
 }
 
-bashMULbinstring()
+function bashMULbinstring()
 {  #multiply two binary words.  The interesting thing is that we will return a new word
    #that is at most 2x the size of the words.  
   
@@ -1127,7 +1127,7 @@ fi
   printf '%s' "$SRESULT_MUL"
 }
 
-bashMULbinstring_conditions()
+function bashMULbinstring_conditions()
 {  #multiply two binary words.  The interesting thing is that we will return a new word
    #that is at most 2x the size of the words.  
   

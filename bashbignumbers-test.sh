@@ -25,7 +25,7 @@ PASSCOUNT=0
 FAILCOUNT=0
 
 # assert_eq <label> <expected> <got>
-assert_eq()
+function assert_eq()
 {
   if [ "$2" == "$3" ]; then
     PASSCOUNT=$((PASSCOUNT+1))
@@ -61,7 +61,7 @@ EXP_SHL="94ac9f36d344acbed5bdce001b246dd8"
 
 # Helper to read the four condition-code flags as a "Z C N V" string.
 # The _conditions functions return "ZCNV:<bits>".
-flags_of() # <ZCNV:bits string>
+function flags_of() # <ZCNV:bits string>
 {
   printf '%s %s %s %s' "${1:0:1}" "${1:1:1}" "${1:2:1}" "${1:3:1}"
 }
