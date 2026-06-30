@@ -253,7 +253,7 @@ bbn_util_getbinlength()
   for STRARG in "$@"
   do
   	STRLEN=${#STRARG} 
-    if [ $STRLEN -lt MAXLEN ]; then
+    if [ $STRLEN -lt $MAXLEN ]; then
       : #the string is shorter than the current max
     else
       MAXLEN=$STRLEN  
@@ -506,7 +506,7 @@ STRSIZE=${#STRBIN1} #the length of the string
 if [ $STRSIZE -lt $STRBIN2 ]; then
   DIFSIZE=$(($STRBIN2-$STRSIZE)) #due to the conditional, this will NEVER be negative
   SEMI="0"
-  for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
+  for ((COUNTER1=0; COUNTER1 < DIFSIZE ; COUNTER1++))
   do
     STRCONSTRUCT="$STRCONSTRUCT$SEMI"
   done   
@@ -534,7 +534,7 @@ STRSIZE=${#STRBIN1} #the length of the string
 if [ $STRSIZE -lt $STRBIN2 ]; then
   DIFSIZE=$(($STRBIN2-$STRSIZE)) #due to the conditional, this will NEVER be negative
   SEMI="0"
-  for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
+  for ((COUNTER1=0; COUNTER1 < DIFSIZE ; COUNTER1++))
   do
     STRCONSTRUCT="$STRCONSTRUCT$SEMI"
   done   
@@ -563,7 +563,7 @@ STRSIZE=${#STRBIN1} #the length of the string
 if [ $STRSIZE -lt $STRBIN2 ]; then
   DIFSIZE=$(($STRBIN2-$STRSIZE)) #due to the conditional, this will NEVER be negative
   SEMI=${STRBIN1:0:1} #get the first character.
-  for ((COUNTER1=0; COUNTER1 < STRSIZE ; COUNTER1++))
+  for ((COUNTER1=0; COUNTER1 < DIFSIZE ; COUNTER1++))
   do
     STRCONSTRUCT="$STRCONSTRUCT$SEMI"
   done   
@@ -792,11 +792,11 @@ bashROLbinstring()
 bashSHLbinstring()
 {
 #  printf '0000:'
+  STRBIN1=$1
   SEMI=${STRBIN1:4:1}
-  if [[ "$SEMI" == ':' ]]; then 
+  if [[ "$SEMI" == ':' ]]; then
     STRBIN1=${STRBIN1:5}
   fi
-  STRBIN1=$1
   STRSIZE=${#STRBIN1}
   let STRLSB=STRSIZE-1
   #RIGHTBIT=${STRBIN1:$STRLSB:1}
@@ -836,8 +836,7 @@ SEMI=${STRBIN1:4:1}
 if [[ "$SEMI" == ':' ]]; then 
   STRBIN1=${STRBIN1:5}
 fi
-  SRESULT=$(bashNOTbinstring $STRBIN1)  #invert the string
-  SRESULT=${SRESULT:5} # remove the status bits
+  SRESULT=$(bashNOTbinstring $STRBIN1)  #invert the string (no status prefix is emitted)
   STRCONSTRUCT=$(bashINCbinstring $SRESULT)
   printf -v GVAR_RESULT '%s' "$STRCONSTRUCT"  
 } 
