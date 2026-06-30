@@ -48,7 +48,7 @@ function echoerr() { echo "$@" 1>&2; }  # echo output to STDERR
 
 function programversion()
 {
-  PROGVERSION="0.2.7"
+  PROGVERSION="0.2.8"
   printf '%s\n' "$PROGVERSION" 
 }
 
@@ -1473,6 +1473,101 @@ function bashNEGbinstring_conditions()
   bbn_ALUflag_overflow_sub "${CZERO:0:1}" "${CA:0:1}" "${CRESULT:0:1}"
   CV=$GVAR_RESULT
   bbn_util_emitconditions "$CRESULT" "$CCARRY" "$CV"
+}
+
+
+####################################################################################
+#  SINGLE-BIT OPERATIONS
+#  These isolate, set, or flip one bit and are intended for injecting/inspecting
+#  single-bit errors (the original motivation for this library).  Bits are numbered
+#  the hardware way: bit 0 is the LSB (the RIGHT-most character of the string) and
+#  bit (width-1) is the MSB.  Any "ZCNV:" condition-code prefix on the input is
+#  removed; the result is returned without a prefix.
+#
+
+# bashGETbit <binstring> <bitindex>   ->  prints the selected bit ("0" or "1")
+function bashGETbit()
+{
+  GB_STR=$(bbn_util_removeflags "$1")
+  GB_IDX=$2
+  GB_LEN=${#GB_STR}
+  if [ "$GB_IDX" -lt 0 ] || [ "$GB_IDX" -ge "$GB_LEN" ]; then
+    echoerr "ERROR, ${FUNCNAME[0]} bit index $GB_IDX out of range 0..$((GB_LEN-1))"
+    return 1
+  fi
+  GB_POS=$((GB_LEN - 1 - GB_IDX)) #bit 0 is the right-most character
+  printf '%s' "${GB_STR:$GB_POS:1}"
+}
+
+# bashSETbit <binstring> <bitindex> <value>   ->  prints the string with that bit forced to value
+function bashSETbit()
+{
+  SB_STR=$(bbn_util_removeflags "$1")
+  SB_IDX=$2
+  SB_VAL=$3
+  SB_LEN=${#SB_STR}
+  if [ "$SB_IDX" -lt 0 ] || [ "$SB_IDX" -ge "$SB_LEN" ]; then
+    echoerr "ERROR, ${FUNCNAME[0]} bit index $SB_IDX out of range 0..$((SB_LEN-1))"
+    printf '%s' "$SB_STR"
+    return 1
+  fi
+  if [ "$SB_VAL" != "0" ] && [ "$SB_VAL" != "1" ]; then
+    echoerr "ERROR, ${FUNCNAME[0]} value must be 0 or 1, got $SB_VAL"
+    printf '%s' "$SB_STR"
+    return 1
+  fi
+  SB_POS=$((SB_LEN - 1 - SB_IDX))
+  printf '%s' "${SB_STR:0:$SB_POS}$SB_VAL${SB_STR:$((SB_POS+1))}"
+}
+
+# bashFLIPbit <binstring> <bitindex>   ->  prints the string with that bit toggled
+function bashFLIPbit()
+{
+  FB_STR=$(bbn_util_removeflags "$1")
+  FB_IDX=$2
+  FB_LEN=${#FB_STR}
+  if [ "$FB_IDX" -lt 0 ] || [ "$FB_IDX" -ge "$FB_LEN" ]; then
+    echoerr "ERROR, ${FUNCNAME[0]} bit index $FB_IDX out of range 0..$((FB_LEN-1))"
+    printf '%s' "$FB_STR"
+    return 1
+  fi
+  FB_POS=$((FB_LEN - 1 - FB_IDX))
+  FB_BIT=${FB_STR:$FB_POS:1}
+  if [ "$FB_BIT" = "1" ]; then FB_NEW=0; else FB_NEW=1; fi
+  printf '%s' "${FB_STR:0:$FB_POS}$FB_NEW${FB_STR:$((FB_POS+1))}"
+}
+
+
+####################################################################################
+#  COMPARISON
+#  bashCMPbinstring computes A - B but discards the difference, keeping only the
+#  ZCNV condition codes (like a CPU CMP).  It prints the four flag bits as "ZCNV"
+#  (no colon, no result) and also leaves them in the GVAR_FLAG_* globals.  Using
+#  the NOT-borrow carry convention (C=1 when A >= B), the flags decode as:
+#    equal             : Z == 1
+#    unsigned A >= B   : C == 1            unsigned A < B : C == 0
+#    unsigned A >  B   : C == 1 and Z == 0
+#    signed   A <  B   : N != V            signed   A >= B : N == V
+#
+function bashCMPbinstring()
+{
+  CMP_A=$(bbn_util_removeflags "$1")
+  CMP_B=$(bbn_util_removeflags "$2")
+  if [ ${#CMP_A} -ne ${#CMP_B} ]; then
+    echoerr "ERROR, ${FUNCNAME[0]} failed due to different lengths ${#CMP_A}, ${#CMP_B}"
+    return 1
+  fi
+  gbashSUBbinstring "$CMP_A" "$CMP_B" #sets GVAR_RESULT and GVAR_SUB_BORROW
+  CMP_RESULT=$GVAR_RESULT
+  if [ "$GVAR_SUB_BORROW" -eq 0 ]; then CMP_C=1; else CMP_C=0; fi
+  bbn_ALUflag_overflow_sub "${CMP_A:0:1}" "${CMP_B:0:1}" "${CMP_RESULT:0:1}"
+  CMP_V=$GVAR_RESULT
+  bbn_ALUflag_zero "$CMP_RESULT"
+  GVAR_FLAG_ZERO=$GVAR_RESULT
+  GVAR_FLAG_CARRY=$CMP_C
+  GVAR_FLAG_NEGATIVE=${CMP_RESULT:0:1}
+  GVAR_FLAG_OVERFLOW=$CMP_V
+  printf '%s' "$GVAR_FLAG_ZERO$GVAR_FLAG_CARRY$GVAR_FLAG_NEGATIVE$GVAR_FLAG_OVERFLOW"
 }
 
 

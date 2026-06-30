@@ -1,4 +1,4 @@
-bashbignumbers.sh, version 0.2.7
+bashbignumbers.sh, version 0.2.8
 
 This function library, bashbignumbers.sh, is designed to support simple arithmetic operations of numbers with arbitrary bit widths of modulus 4 equals to zero in BASH.  BASH does include built-in functions; however, there is a bit width limit.  This library, at the cost of speed, will allow for large number calculations in a similar manner to how a CPU would handle these.  This is important if you want the "overflow" bit for instance.
 
@@ -40,6 +40,22 @@ bashSHRbinstring_conditions, bashROLbinstring_conditions, bashRORbinstring_condi
 bashSUBbinstring_conditions, bashNEGbinstring_conditions) that emit the "ZCNV:" prefix.
 For the logical operations C and V are always 0.  For the shifts and rotates, C is the bit that leaves the word (the shifted/rotated-out bit) and V is 0.  For subtraction, C follows the x86/ARM/68k convention of being the inverse of the borrow (C=1 when A >= B), and V is the signed overflow.  Negation is treated as 0 - A, so its flags follow the subtraction rules (V is set only when negating the most-negative value).
 
+Comparison:
+bashCMPbinstring()  Compare A and B (A - B, result discarded); prints the "ZCNV" flags
+
+Single-bit (bit 0 = LSB = right-most character):
+bashGETbit()        Return the bit at an index ("0" or "1")
+bashSETbit()        Return the string with the bit at an index forced to 0 or 1
+bashFLIPbit()       Return the string with the bit at an index toggled
+
+bashCMPbinstring() prints the four condition-code bits "ZCNV" (no colon, no result)
+and also leaves them in the GVAR_FLAG_* globals.  With the NOT-borrow carry convention
+(C=1 when A >= B): equal is Z==1; unsigned A>=B is C==1 (A<B is C==0); unsigned A>B is
+C==1 and Z==0; signed A<B is N!=V (signed A>=B is N==V).
+
+The single-bit functions are meant for isolating and injecting single-bit errors.  They
+remove any "ZCNV:" prefix on the input and return the result without one.
+
 Utility:
 bashUTILbin2hex()   Convert a binary string to a hex string
 bashUTILhex2bin()   Convert a hex string to a binary string
@@ -69,6 +85,7 @@ a325aa75a7335e84f11f80c46f0921ada9a4887620c583eff95f09e669df8634
 
 Revision History:
 
+version 0.2.8:  Added single-bit operations bashGETbit(), bashSETbit(), bashFLIPbit() (bit 0 is the LSB) for isolating and injecting single-bit errors, and bashCMPbinstring() which compares two words and reports the ZCNV flags without storing a result.
 version 0.2.7:  Added "_conditions" variants for the logical operations (XOR/AND/OR/NOT), the shifts and rotates (SHL/SHR/ROL/ROR), and SUB/NEG, so every operation can now emit ZCNV condition codes.  For the shifts/rotates the carry is the bit that leaves the word; for subtraction the carry is the inverse of the borrow (C=1 when A >= B).
 version 0.2.6:  Moved to git from svn.  Added subtraction and division: bashSUBbinstring(), bashDIVbinstring(), bashMODbinstring(), and bashDIVbinstring_conditions().  Division returns the quotient in GVAR_RESULT and the remainder in GVAR_REMAINDER.  Also hardened bashPADbinstring(), bashEXTbinstring(), and bashUTILzerowidth() to reset their accumulator so they no longer inherit a stale value when called outside a subshell.
 version 0.2.5:  Added the bashFLIPbinstring() function.

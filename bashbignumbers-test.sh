@@ -165,6 +165,28 @@ cnd "NEG_c smin" "$(bashNEGbinstring_conditions $(bashUTILhex2bin $SMIN))" "0011
 
 
 ####################################################################################
+#  SINGLE-BIT OPERATIONS and COMPARE
+#  Bits numbered LSB=0 (right-most).  Sample byte 0xA5 = 10100101.
+#
+echo ""
+BITS="10100101"
+assert_eq "GETbit 0"  "1" "$(bashGETbit $BITS 0)"
+assert_eq "GETbit 1"  "0" "$(bashGETbit $BITS 1)"
+assert_eq "GETbit 7"  "1" "$(bashGETbit $BITS 7)"
+assert_eq "SETbit 1=1" "10100111" "$(bashSETbit $BITS 1 1)"
+assert_eq "SETbit 0=0" "10100100" "$(bashSETbit $BITS 0 0)"
+assert_eq "FLIPbit 0"  "10100100" "$(bashFLIPbit $BITS 0)"
+assert_eq "FLIPbit 7"  "00100101" "$(bashFLIPbit $BITS 7)"
+# input may carry a ZCNV: prefix; result is returned without one
+assert_eq "FLIPbit pfx" "10101101" "$(bashFLIPbit 0000:$BITS 3)"
+
+# CMP prints "ZCNV"; using NOT-borrow carry (C=1 when A >= B).
+assert_eq "CMP A<B" "0010" "$(bashCMPbinstring $BINARG0 $BINARG1)"
+assert_eq "CMP B>A" "0100" "$(bashCMPbinstring $BINARG1 $BINARG0)"
+assert_eq "CMP A==A" "1100" "$(bashCMPbinstring $BINARG0 $BINARG0)"
+
+
+####################################################################################
 #  REGRESSION TESTS (previously-fixed bugs)
 #  These guard small, targeted cases that the 128-bit vector above did not exercise.
 #
